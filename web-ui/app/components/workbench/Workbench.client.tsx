@@ -20,6 +20,7 @@ import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
 import { Preview } from './Preview';
+import DebuggerPanel from './DebuggerPanel';
 import useViewport from '~/lib/hooks';
 
 import { usePreviewStore } from '~/lib/stores/previews';
@@ -372,6 +373,17 @@ export const Workbench = memo(
       }
     }, []);
 
+    const onNavigateDebuggerSource = useCallback((filePath: string, line: number) => {
+      workbenchStore.setSelectedFile(filePath);
+
+      window.setTimeout(() => {
+        workbenchStore.setCurrentDocumentScrollPosition({
+          line: Math.max(0, line - 1),
+          column: 0,
+        });
+      }, 0);
+    }, []);
+
     return (
       chatStarted && (
         <motion.div
@@ -481,19 +493,30 @@ export const Workbench = memo(
                 </div>
                 <div className="relative flex-1 overflow-hidden">
                   <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
-                    <EditorPanel
-                      editorDocument={currentDocument}
-                      isStreaming={isStreaming}
-                      selectedFile={selectedFile}
-                      files={files}
-                      unsavedFiles={unsavedFiles}
-                      fileHistory={fileHistory}
-                      onFileSelect={onFileSelect}
-                      onEditorScroll={onEditorScroll}
-                      onEditorChange={onEditorChange}
-                      onFileSave={onFileSave}
-                      onFileReset={onFileReset}
-                    />
+                    <div className="h-full flex flex-col">
+                      <div className="min-h-0 flex-1">
+                        <EditorPanel
+                          editorDocument={currentDocument}
+                          isStreaming={isStreaming}
+                          selectedFile={selectedFile}
+                          files={files}
+                          unsavedFiles={unsavedFiles}
+                          fileHistory={fileHistory}
+                          onFileSelect={onFileSelect}
+                          onEditorScroll={onEditorScroll}
+                          onEditorChange={onEditorChange}
+                          onFileSave={onFileSave}
+                          onFileReset={onFileReset}
+                        />
+                      </div>
+                      <div className="h-[360px] min-h-[280px] border-t border-bolt-elements-borderColor">
+                        <DebuggerPanel
+                          files={files}
+                          selectedFile={selectedFile}
+                          onNavigateToSource={onNavigateDebuggerSource}
+                        />
+                      </div>
+                    </div>
                   </View>
                   <View
                     initial={{ x: '100%' }}

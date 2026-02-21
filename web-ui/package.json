@@ -5,6 +5,8 @@
   "scripts": {
     "test": "node -e \"console.log('no tests configured')\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@remix-project/remix-debug": "*"
+  },
   "devDependencies": {}
 }
