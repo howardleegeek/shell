@@ -5,6 +5,7 @@
   "description": "Shell - Web3 Vibe Coding IDE",
   "license": "MIT",
   "dependencies": {
+    "@stripe/stripe-js": "^8.8.0",
     "ethers": "^6.9.0"
   },
   "scripts": {
