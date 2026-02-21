@@ -5,11 +5,6 @@ libs = ["lib"]
 
 [rpc_endpoints]
 sepolia = "https://rpc.sepolia.org"
-mainnet = "https://eth-mainnet.g.alchemy.com/v2/..."
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
-
-[dependencies]
-openzeppelin = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.9.5" }
-forge-std = { git = "https://github.com/foundry-rs/forge-std", tag = "v1.7.6" }
