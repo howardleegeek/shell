@@ -37,8 +37,10 @@ jobs:
 
       # Install demo deps
       - name: Install demo deps
-        working-directory: demo/evm-vault
-        run: forge install
+        run: |
+          cd demo/evm-vault
+          # Try forge install, if fails continue anyway
+          forge install openzeppelin/openzeppelin-contracts foundry-rs/forge-std --no-commit || true
 
       # 1) First test should FAIL (deliberate event mismatch)
       - name: Test (expected fail)
