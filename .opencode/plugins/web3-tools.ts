@@ -15,6 +15,7 @@
 import { type Plugin, tool } from "@opencode-ai/plugin";
 import fs from "node:fs";
 import path from "node:path";
+import { generateLocalExplorerReport } from "./local-explorer";
 
 
 type TestReport = {
@@ -369,6 +370,45 @@ export const Web3ToolsPlugin: Plugin = async ({ $, directory }) => {
           writeJson(reportPath, report);
           
           return `🔍 Audit complete: ${issues.length} issues found\nReport: ${path.relative(directory, reportPath)}`;
+        },
+      }),
+
+      // =====================
+      // Local Explorer
+      // =====================
+      local_explorer: tool({
+        description: "Generate a local-explorer report for the in-repo Ethereum-like chain.",
+        args: {
+          // optional: max number of txs to fetch in the explorer
+          maxTxs: tool.schema.optional(tool.schema.number()),
+        },
+        async execute(args) {
+          const maxTxs = (typeof args?.maxTxs === 'number') ? (args.maxTxs as number) : 5;
+          // Attempt to generate a local-explorer report; this will write to reports/local-explorer.evm.json
+          try {
+            // Prefer TS implementation if available
+            const dir = directory;
+            // Use TS/JS bridge if possible
+            // Try TS first by dynamic import
+            let report;
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              const mod = require('./local-explorer');
+              if (typeof mod.generateLocalExplorerReport === 'function') {
+                report = await mod.generateLocalExplorerReport(dir, maxTxs);
+              }
+            } catch {
+              // Fallback to JS shim
+              const mod = require('./local-explorer.js');
+              if (typeof mod.generateLocalExplorerReport === 'function') {
+                report = await mod.generateLocalExplorerReport(dir, maxTxs);
+              }
+            }
+            const pathOut = report?.path ?? path.join(directory, 'reports', 'local-explorer.evm.json');
+            return `✅ Local Explorer report generated\nReport: ${path.relative(directory, pathOut)}`;
+          } catch (e: any) {
+            return `❌ Local Explorer failed: ${e?.message ?? String(e)}`;
+          }
         },
       }),
     },
