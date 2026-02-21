@@ -1,31 +1,60 @@
 // Lightweight Remix route stubs for fuzz orchestration
 // This file is a minimal integration point and may be substituted by a real Remix app.
 import path from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'fs';
 // @ts-ignore - ambient types may be unavailable in this environment
 const { spawn } = require('child_process');
 
 // POST: start fuzz runs
 export async function action(req: any) {
-  let body = {};
+  let body = {}
   try {
-    body = await req.json();
+    body = await req.json()
   } catch {}
-  const runs = typeof body?.runs === 'number' ? body.runs : 100;
-  // Spawn the fuzz runner; ignore errors in this stub
+  const runs = typeof (body as any)?.runs === 'number' ? (body as any).runs : 100
+
   try {
-    // Path is relative to this route file
-    const scriptPath = path.resolve(__dirname, '../../runner/src/fuzz.js');
-    const child = spawn('node', [scriptPath, String(runs)], { stdio: 'ignore' });
-    return new Response(JSON.stringify({ started: true, pid: child.pid }), {
+    // Path is relative to this route file; fuzz.js lives at repo/runner/src/fuzz.js
+    const scriptPath = path.resolve(__dirname, '../../../../runner/src/fuzz.js')
+    const { spawn } = require('child_process')
+    const child = spawn('node', [scriptPath, String(runs)], {
+      stdio: 'inherit'
+    })
+
+    // Wait for fuzz.js to finish, then read latest report
+    await new Promise((resolve) => {
+      child.on('close', () => resolve(null))
+    })
+
+    // Load latest fuzz report if present
+    const dir = path.resolve(process.cwd(), 'reports')
+    let latest = null
+    try {
+      if (existsSync(dir)) {
+        const files = readdirSync(dir).filter((f: string) => f.startsWith('fuzz.') && f.endsWith('.json'))
+        if (files.length) {
+          files.sort((a, b) => {
+            const pa = require('fs').statSync(path.join(dir, a)).mtimeMs
+            const pb = require('fs').statSync(path.join(dir, b)).mtimeMs
+            return pb - pa
+          })
+          const latestPath = path.join(dir, files[0])
+          latest = JSON.parse(readFileSync(latestPath, 'utf8'))
+        }
+      }
+    } catch {
+      latest = null
+    }
+
+    return new Response(JSON.stringify({ started: true, latest }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+      headers: { 'Content-Type': 'application/json' }
+    })
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }
 
