@@ -22,7 +22,6 @@ export async function action(req: any) {
     
     // Path is relative to this route file; fuzz.js lives at repo/runner/src/fuzz.js
     const scriptPath = path.resolve(__dirname, '../../../../runner/src/fuzz.js');
-    const { spawn } = require('child_process');
     const child = spawn('node', [scriptPath, String(runs)], {
       stdio: 'pipe',
       shell: true,
