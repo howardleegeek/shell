@@ -4,10 +4,12 @@
 
 **Shell** 是 OpenCode 的 Web3 扩展包，为 AI 编程助手添加智能合约开发、测试、部署、安全审计能力。
 
+> **注意**: OpenCode 已迁移到 [Crush](https://github.com/charmbracelet/crush)，但 [opencode.ai](https://opencode.ai/docs/) 仍有完整插件和 Server 文档可用。
+
 ## Project Info
 
 - **Name**: Shell
-- **Type**: OpenCode Extension (Skills + Agents)
+- **Type**: OpenCode Extension (Skills + Plugins + Desktop App)
 - **Location**: `~/Downloads/oyster/shell/`
 - **GitHub**: `howardleegeek/shell`
 
@@ -16,38 +18,136 @@
 ```
 OpenCode 核心 (不动)
     └── Shell 扩展包
-        ├── solidity-write/     # Solidity 合约编写
-        ├── foundry-run/        # Foundry 任务执行
-        ├── slither-scan/       # 安全扫描
+        ├── .opencode/skills/       # Skill 层
+        │   ├── solidity-write/     # Solidity 合约编写
+        │   ├── foundry-run/        # Foundry 任务执行
+        │   └── slither-scan/       # 安全扫描
+        ├── .opencode/plugins/      # Plugin 层 (新增)
+        │   └── web3-tools.ts        # Web3 工具插件
         └── (规划中)
-            ├── hardhat-run/
-            ├── deploy/
-            └── anchor-run/
+            ├── desktop/             # Tauri 桌面 App
+            └── templates/            # 合约模板注册表
 ```
+
+## Capability Layers
+
+### A. Web3 Tooling Layer (Plugins)
+
+基于 OpenCode 插件系统 ([Docs](https://opencode.ai/docs/plugins/))：
+
+| Tool | Chain | Runner | 功能 |
+|------|-------|--------|------|
+| `solana_anchor_test` | Solana | Anchor | 运行测试，生成报告 |
+| `evm_forge_test` | EVM | Foundry | 运行测试，生成报告 |
+| `evm_hardhat_test` | EVM | Hardhat | 运行测试，生成报告 |
+| `evm_deploy` | EVM | Forge/Hardhat | 部署到测试网 |
+| `solana_deploy` | Solana | Anchor | 部署到 Devnet |
+| `web3_audit` | Both | Slither | 安全扫描 |
+
+### B. Web3 Agents (配置复用 OpenCode 内置)
+
+使用 OpenCode 的 agent 配置能力：
+
+| Agent | 职责 | 权限 |
+|-------|------|------|
+| `@web3-architect` | 只出设计（权限 ask，禁止写文件） | ask |
+| `@web3-implementer` | 写代码 + 补 tests | allow |
+| `@web3-debugger` | 读日志 → 生成 patch | allow (强约束: 必须跑 test) |
+| `@web3-release` | 部署前检查清单 | ask |
+
+### C. Template Registry
+
+维护成熟模板的可选项：
+
+**Solana:**
+- `solana-counter` - Anchor 基础计数器
+- `solana-vault` - 代币托管
+- `solana-dex` - DEX 基础
+
+**EVM:**
+- `evm-erc20` - ERC20 代币
+- `evm-nft` - ERC721 NFT
+- `evm-governance` - DAO 治理
+- `evm-defi` - 基础 DEX
 
 ## Features
 
-### Phase 1 (MVP)
+### Phase 1 (MVP) - 已完成
 
 - [x] Solidity 合约编写 skill
 - [x] Foundry 集成 skill
 - [x] Slither 安全扫描 skill
+
+### Phase 2 - 当前
+
+- [ ] OpenCode 插件 (web3-tools.ts)
 - [ ] 模板系统
 - [ ] 基础测试用例生成
-
-### Phase 2
-
 - [ ] Hardhat 集成
-- [ ] 多链部署
-- [ ] 合约验证
 - [ ] Anchor (Solana) 支持
+
+### Phase 3 - 桌面 App
+
+- [ ] Tauri macOS App
+- [ ] OpenCode Server 集成
+- [ ] Web3 面板（模板选择、网络选择、Run Test、Deploy、Reports）
 
 ## Dependencies
 
+**Core:**
 - OpenCode (已安装)
+- Node.js 18+
+- TypeScript
+
+**Web3 Tools:**
 - Foundry (forge, cast, anvil)
+- Hardhat
+- Anchor (Solana)
 - Slither
 - OpenZeppelin Contracts
+
+**Desktop:**
+- Rust (for Tauri)
+- pnpm
+
+## Desktop App 架构 (Tauri)
+
+```
+┌─────────────────────────────────────┐
+│       Web3 Dev Studioauri)       (T │
+│  - UI: Webview (React/Svelte)       │
+│  - Panels: Chat / Diff / Run        │
+└────────────────┬────────────────────┘
+                 │ Tauri commands (Rust)
+                 ▼
+┌─────────────────────────────────────┐
+│         Local Runtime               │
+│  - Launch opencode serve            │
+│  - Keychain access (secrets)        │
+└────────────────┬────────────────────┘
+                 │ HTTP (OpenAPI)
+                 ▼
+┌─────────────────────────────────────┐
+│         OpenCode Server             │
+│  - Sessions / Agents                 │
+│  - Tools (built-in + Shell plugins) │
+└────────────────┬────────────────────┘
+                 │ CLI
+                 ▼
+         Anchor / Forge / Hardhat
+```
+
+## 插件使用
+
+**项目级**: 放在 `.opencode/plugins/` 即自动加载
+
+**全局**: 放在 `~/.config/opencode/plugins/`
+
+**调用示例**:
+```
+"运行 solana_anchor_test"
+"运行 evm_forge_test 并把失败日志总结成修复 patch"
+```
 
 ## License
 

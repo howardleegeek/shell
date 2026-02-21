@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "description": "Shell Template Registry - Web3 contract templates",
+  "templates": {
+    "evm": {
+      "erc20": {
+        "name": "ERC20 Token",
+        "description": "Standard ERC20 token with optional features",
+        "source": "https://github.com/howardleegeek/shell-template-erc20",
+        "framework": ["foundry", "hardhat"],
+        "features": ["mintable", "burnable", "pausable", "roles"]
+      },
+      "erc721": {
+        "name": "ERC721 NFT",
+        "description": "Non-fungible token with metadata",
+        "source": "https://github.com/howardleegeek/shell-template-erc721",
+        "framework": ["foundry", "hardhat"],
+        "features": ["mintable", "burnable", "uri-storage"]
+      },
+      "governance": {
+        "name": "DAO Governance",
+        "description": "Basic DAO with token-based voting",
+        "source": "https://github.com/howardleegeek/shell-template-governance",
+        "framework": ["foundry"],
+        "features": ["proposals", "voting", "timelock"]
+      },
+      "vault": {
+        "name": "Secure Vault",
+        "description": "Reentrancy-safe vault contract",
+        "source": "https://github.com/howardleegeek/shell-template-vault",
+        "framework": ["foundry"],
+        "features": ["reentrancy-guard", "ownable", "pausable"]
+      }
+    },
+    "solana": {
+      "counter": {
+        "name": "Counter",
+        "description": "Basic Anchor counter example",
+        "source": "https://github.com/howardleegeek/shell-template-solana-counter",
+        "framework": ["anchor"]
+      },
+      "token": {
+        "name": "SPL Token",
+        "description": "SPL token with minting and transfers",
+        "source": "https://github.com/howardleegeek/shell-template-solana-token",
+        "framework": ["anchor"]
+      },
+      "swap": {
+        "name": "Token Swap",
+        "description": "Basic AMMDEX",
+        "source": "https://github.com/howardleegeek/shell-template-solana-swap",
+        "framework": ["anchor"]
+      }
+    }
+  }
+}
