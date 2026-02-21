@@ -7,6 +7,7 @@ export interface UpgradeState {
     upgradeStatus: UpgradeStatus
     contractName: string
     generatedCode: string
+    error: string | null
 }
 
 export const upgradeStore = {
@@ -15,6 +16,7 @@ export const upgradeStore = {
         upgradeStatus: 'idle' as UpgradeStatus,
         contractName: '',
         generatedCode: '',
+        error: null,
     } as UpgradeState,
     
     listeners: [] as ((state: UpgradeState) => void)[],
@@ -36,6 +38,7 @@ export const upgradeStore = {
     
     setMode(mode: UpgradeMode): void {
         this.state.upgradeMode = mode
+        this.state.generatedCode = ''
         this.notify()
     },
     
@@ -54,9 +57,8 @@ export const upgradeStore = {
         this.notify()
     },
     
-    // Optional: keep an error field in memory for debugging in the UI if needed in future
-    setError(_error: string | null): void {
-        // Currently no-op since we don't expose an error field in state
+    setError(error: string | null): void {
+        this.state.error = error
         this.notify()
     },
     
@@ -96,6 +98,24 @@ export const upgradeStore = {
         } catch (e) {
             const error = e instanceof Error ? e.message : 'Unknown error'
             this.setError(error)
+            this.setStatus('idle')
+            throw e
+        }
+    },
+
+    async deploy(onDeploy?: () => void | Promise<void>): Promise<void> {
+        this.setStatus('deploying')
+        this.setError(null)
+
+        try {
+            if (onDeploy) {
+                await onDeploy()
+            }
+            this.setStatus('done')
+        } catch (e) {
+            const error = e instanceof Error ? e.message : 'Failed to deploy upgrade'
+            this.setError(error)
+            this.setStatus('idle')
             throw e
         }
     },

@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-
-type UpgradeMode = 'transparent' | 'uups' | 'beacon'
+import React, { useCallback, useMemo, useState } from 'react'
+import { useUpgradeStore, type UpgradeMode, type UpgradeStatus } from '~/lib/stores/upgrade'
 type Step = 1 | 2 | 3 | 4
 
 interface UpgradeWizardProps {
@@ -27,74 +26,69 @@ export default function UpgradeWizard({
     onDeploy,
     availableContracts = ['Market', 'Token', 'DAO', 'Vault', 'Staking']
 }: UpgradeWizardProps) {
+    const store = useUpgradeStore()
     const [step, setStep] = useState<Step>(1)
-    const [mode, setMode] = useState<UpgradeMode | null>(null)
-    const [contract, setContract] = useState<string>('')
-    const [generatedCode, setGeneratedCode] = useState<string>('')
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [state, setState] = useState(store.getState())
 
-    const selectMode = useCallback((m: UpgradeMode) => {
-        setMode(m)
-        setError(null)
+    React.useEffect(() => store.subscribe(setState), [store])
+
+    const selectMode = useCallback((mode: UpgradeMode) => {
+        store.setMode(mode)
+        store.setError(null)
         setStep(2)
-    }, [])
+    }, [store])
 
-    const selectContract = useCallback((c: string) => {
-        setContract(c)
-        setError(null)
-    }, [])
+    const selectContract = useCallback((contractName: string) => {
+        store.setContract(contractName)
+        store.setError(null)
+    }, [store])
 
     const goToStep3 = useCallback(() => {
-        if (!contract) {
-            setError('Please select a contract')
+        if (!state.contractName) {
+            store.setError('Please select a contract')
             return
         }
         setStep(3)
-        setError(null)
-    }, [contract])
+    }, [state.contractName, store])
+
+    const generatePreview = useCallback(async () => {
+        if (!state.contractName) {
+            store.setError('Please select a contract')
+            return
+        }
+        await store.generateCode()
+    }, [state.contractName, store])
 
     const goToStep4 = useCallback(() => {
-        if (!mode || !contract) return
-        setIsGenerating(true)
-        setError(null)
-        
-        fetch('/api/upgrade', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode, contractName: contract }),
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                setError(data.error)
-                setGeneratedCode(data.fallback || '')
-            } else {
-                setGeneratedCode(data.code || '')
-            }
-            setIsGenerating(false)
-        })
-        .catch(e => {
-            setError(e.message || 'Failed to generate code')
-            setGeneratedCode(`// Generated code for ${contract} with mode ${mode}`)
-            setIsGenerating(false)
-        })
-    }, [mode, contract])
-
-    const handleDeploy = useCallback(() => {
-        setStep(4)
-        if (onDeploy) {
-            onDeploy()
+        if (!state.generatedCode) {
+            store.setError('Generate preview before deployment')
+            return
         }
-    }, [onDeploy])
+        setStep(4)
+    }, [state.generatedCode, store])
+
+    const handleDeploy = useCallback(async () => {
+        await store.deploy(onDeploy)
+    }, [store, onDeploy])
 
     const resetWizard = useCallback(() => {
         setStep(1)
-        setMode(null)
-        setContract('')
-        setGeneratedCode('')
-        setError(null)
-    }, [])
+        store.reset()
+    }, [store])
+
+    const statusLabel = useMemo<Record<UpgradeStatus, string>>(() => ({
+        idle: 'Idle',
+        generating: 'Generating preview...',
+        deploying: 'Deploying...',
+        done: 'Deployment complete',
+    }), [])
+
+    const mode = state.upgradeMode
+    const contract = state.contractName
+    const generatedCode = state.generatedCode
+    const isGenerating = state.upgradeStatus === 'generating'
+    const isDeploying = state.upgradeStatus === 'deploying'
+    const error = state.error
 
     return (
         <div className="upgrade-wizard" style={{ 
@@ -135,7 +129,11 @@ export default function UpgradeWizard({
                 </div>
             </div>
 
-            {error && (
+            <div style={{ marginBottom: 12, fontSize: 13, color: '#4b5563' }}>
+                Status: <strong>{statusLabel[state.upgradeStatus]}</strong>
+            </div>
+
+            {error ? (
                 <div style={{
                     padding: '12px 16px',
                     background: '#fef2f2',
@@ -147,7 +145,7 @@ export default function UpgradeWizard({
                 }}>
                     {error}
                 </div>
-            )}
+            ) : null}
 
             {step >= 1 && (
                 <section style={{ marginBottom: 24 }} aria-label="select-mode">
@@ -159,13 +157,12 @@ export default function UpgradeWizard({
                             <button
                                 key={m}
                                 onClick={() => selectMode(m)}
-                                disabled={step > 1}
                                 style={{
                                     padding: 20,
                                     border: mode === m ? '2px solid #3b82f6' : '2px solid #e5e7eb',
                                     borderRadius: 12,
                                     background: mode === m ? '#eff6ff' : '#fff',
-                                    cursor: step > 1 ? 'default' : 'pointer',
+                                    cursor: 'pointer',
                                     textAlign: 'left',
                                     transition: 'all 0.2s',
                                 }}
@@ -201,13 +198,12 @@ export default function UpgradeWizard({
                             <button
                                 key={c}
                                 onClick={() => selectContract(c)}
-                                disabled={step > 2}
                                 style={{
                                     padding: '10px 20px',
                                     border: contract === c ? '2px solid #3b82f6' : '2px solid #e5e7eb',
                                     borderRadius: 8,
                                     background: contract === c ? '#eff6ff' : '#fff',
-                                    cursor: step > 2 ? 'default' : 'pointer',
+                                    cursor: 'pointer',
                                     fontSize: 14,
                                     fontWeight: contract === c ? 500 : 400,
                                     color: '#111827',
@@ -246,7 +242,7 @@ export default function UpgradeWizard({
                     </h4>
                     <div style={{ marginBottom: 12 }}>
                         <button
-                            onClick={goToStep4}
+                            onClick={generatePreview}
                             disabled={isGenerating}
                             style={{
                                 padding: '10px 24px',
@@ -260,7 +256,24 @@ export default function UpgradeWizard({
                                 marginRight: 12,
                             }}
                         >
-                            {isGenerating ? 'Generating...' : 'Generate Code'}
+                            {isGenerating ? 'Generating...' : 'Generate Preview'}
+                        </button>
+                        <button
+                            onClick={goToStep4}
+                            disabled={!generatedCode || isGenerating}
+                            style={{
+                                padding: '10px 24px',
+                                background: !generatedCode || isGenerating ? '#9ca3af' : '#3b82f6',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontSize: 14,
+                                fontWeight: 500,
+                                cursor: !generatedCode || isGenerating ? 'default' : 'pointer',
+                                marginRight: 12,
+                            }}
+                        >
+                            Continue to Deploy
                         </button>
                         <button
                             onClick={() => setStep(2)}
@@ -335,16 +348,17 @@ export default function UpgradeWizard({
                             onClick={handleDeploy}
                             style={{
                                 padding: '12px 32px',
-                                background: '#7c3aed',
+                                background: isDeploying ? '#9ca3af' : '#7c3aed',
                                 color: '#fff',
                                 border: 'none',
                                 borderRadius: 8,
                                 fontSize: 16,
                                 fontWeight: 600,
-                                cursor: 'pointer',
+                                cursor: isDeploying ? 'default' : 'pointer',
                             }}
+                            disabled={isDeploying}
                         >
-                            Deploy Now
+                            {isDeploying ? 'Deploying...' : 'Deploy Now'}
                         </button>
                         <button
                             onClick={resetWizard}

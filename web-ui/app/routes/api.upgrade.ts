@@ -1,215 +1,147 @@
-import path from 'path';
-import fs from 'fs';
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { type ActionFunctionArgs, json, type LoaderFunctionArgs } from '@remix-run/cloudflare'
 
-type UpgradeMode = 'transparent' | 'uups' | 'beacon';
+type UpgradeMode = 'transparent' | 'uups' | 'beacon'
 
-const templateCache = new Map<UpgradeMode, string>();
+const templateCache = new Map<UpgradeMode, string>()
 
-function loadTemplate(mode: UpgradeMode): string {
-    if (templateCache.has(mode)) {
-        return templateCache.get(mode)!;
-    }
-    
-    // Map mode to the exact template file name expected in templates/upgrade
-    const baseName = mode === 'uups' ? 'UUPSProxy' : (mode.charAt(0).toUpperCase() + mode.slice(1) + 'Proxy')
-    const templatePath = path.resolve(
-        process.cwd(),
-        `templates/upgrade/${baseName}.sol.template`
-    );
-    
-    try {
-        const content = fs.readFileSync(templatePath, 'utf8');
-        templateCache.set(mode, content);
-        return content;
-    } catch {
-        return '';
-    }
+const modeTemplateMap: Record<UpgradeMode, string> = {
+  transparent: 'TransparentProxy.sol.template',
+  uups: 'UUPSProxy.sol.template',
+  beacon: 'BeaconProxy.sol.template',
 }
 
-function generateUpgradeCode(mode: UpgradeMode, contractName: string): string {
-    const template = loadTemplate(mode);
-    let code = template.replace(/\{\{contractName\}\}/g, contractName);
-    
-    const storageLayoutHint = `
-/**
+function sanitizeContractName(name?: string): string {
+  if (!name) return 'MyContract'
+  const cleaned = name.replace(/[^a-zA-Z0-9_]/g, '').replace(/^[^a-zA-Z_]+/, '')
+  return cleaned.length > 0 ? cleaned : 'MyContract'
+}
+
+function loadTemplate(mode: UpgradeMode, contractName: string): string {
+  if (!templateCache.has(mode)) {
+    const templatePath = path.resolve(process.cwd(), 'templates/upgrade', modeTemplateMap[mode])
+    templateCache.set(mode, readFileSync(templatePath, 'utf8'))
+  }
+  const template = templateCache.get(mode) ?? ''
+  return template.replace(/\{\{contractName\}\}/g, contractName)
+}
+
+function storageLayoutHint(contractName: string): string {
+  return `/**
  * STORAGE LAYOUT CHECK REMINDER:
- * Before upgrading, ensure the new implementation maintains compatible storage layout.
- * Run: forge inspect ${contractName} storage-layout
- * or use OpenZeppelin's upgradeable contracts to ensure no storage slot collisions.
- * 
- * Important checks:
- * - New state variables cannot be added before existing ones
- * - State variable types must remain the same
- * - Storage gaps may be needed for future upgrades
- */
-`;
-    
-    const upgradeScript = generateUpgradeScript(mode, contractName);
-    
-    return code + '\n\n' + storageLayoutHint + '\n\n' + upgradeScript;
+ * Run \`forge inspect ${contractName} storage-layout\` before upgrading.
+ * Keep variable order and types stable across versions to avoid slot collisions.
+ */`
 }
 
 function generateUpgradeScript(mode: UpgradeMode, contractName: string): string {
-    const scripts: Record<UpgradeMode, string> = {
-        transparent: `
-// Upgrade Script for Transparent Proxy
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+  if (mode === 'transparent') {
+    return `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract ${contractName}TransparentUpgradeScript {
-    
-    function upgradeProxy(
-        address proxyAddress,
-        address newImplementation,
-        address proxyAdmin
-    ) external {
-        ProxyAdmin(proxyAdmin).upgrade(
-            TransparentUpgradeableProxy(proxyAddress),
-            newImplementation
-        );
+    function deployProxy(address implementation, address admin, bytes memory initCalldata) external returns (address) {
+        return address(new TransparentUpgradeableProxy(implementation, admin, initCalldata));
     }
-    
-    function deployProxy(
-        address logic,
-        address admin,
-        bytes memory initData
-    ) external returns (address) {
-        return address(new TransparentUpgradeableProxy(logic, admin, initData));
+
+    function upgradeProxy(address proxyAdmin, address payable proxyAddress, address newImplementation) external {
+        ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(proxyAddress), newImplementation);
     }
-}
-`,
-        uups: `
-// Upgrade Script for UUPS Proxy
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+}`
+  }
+
+  if (mode === 'uups') {
+    return `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ${contractName}UUPSUpgradeScript {
-    
-    function upgradeProxy(
-        address proxyAddress,
-        address newImplementation,
-        bytes memory data
-    ) external {
+    function deployProxy(address implementation, bytes memory initCalldata) external returns (address) {
+        return address(new ERC1967Proxy(implementation, initCalldata));
+    }
+
+    function upgradeProxy(address proxyAddress, address newImplementation, bytes memory upgradeCallData) external {
         (bool success, ) = proxyAddress.call(
-            abi.encodeWithSignature("upgradeTo(address)", newImplementation)
+            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, upgradeCallData)
         );
-        if (initData.length > 0) {
-            (bool initSuccess, ) = proxyAddress.call(initData);
-            require(initSuccess, "Initialization failed");
-        }
-        require(success, "Upgrade failed");
+        require(success, "UUPS upgrade failed");
     }
-    
-    function deployProxy(
-        address implementation,
-        bytes memory initData
-    ) external returns (address) {
-        return address(new ERC1967Proxy(implementation, initData));
-    }
-}
-`,
-        beacon: `
-// Upgrade Script for Beacon Proxy
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+}`
+  }
+
+  return `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 
 contract ${contractName}BeaconUpgradeScript {
-    
-    function upgradeBeacon(
-        address beaconAddress,
-        address newImplementation
-    ) external {
-        UpgradeableBeacon(beaconAddress).upgradeTo(newImplementation);
-    }
-    
-    function deployBeacon(
-        address implementation,
-        address owner
-    ) external returns (address) {
+    function deployBeacon(address implementation, address owner) external returns (address) {
         return address(new UpgradeableBeacon(implementation, owner));
     }
-    
-    function deployBeaconProxy(
-        address beacon,
-        bytes memory data
-    ) external returns (address) {
-        return address(new BeaconProxy(beacon, data));
+
+    function deployBeaconProxy(address beacon, bytes memory initCalldata) external returns (address) {
+        return address(new BeaconProxy(beacon, initCalldata));
     }
-}
-`
-    };
-    
-    return scripts[mode];
-}
 
-export async function action(req: any) {
-    let body = {};
-    try {
-        body = await req.json();
-    } catch {}
-    
-    const mode = (body?.mode as UpgradeMode) || 'transparent';
-    const contractName = (body?.contractName as string) || body?.contract as string || 'MyContract';
-    
-    if (!['transparent', 'uups', 'beacon'].includes(mode)) {
-        return new Response(JSON.stringify({ 
-            error: 'Invalid mode. Must be transparent, uups, or beacon' 
-        }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-        });
+    function upgradeBeacon(address beacon, address newImplementation) external {
+        UpgradeableBeacon(beacon).upgradeTo(newImplementation);
     }
-    
-    try {
-        const code = generateUpgradeCode(mode, contractName);
-        return new Response(JSON.stringify({ 
-            code,
-            mode,
-            contractName,
-            success: true
-        }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (e) {
-        return new Response(JSON.stringify({ 
-            error: String(e),
-            fallback: generateFallbackCode(mode, contractName)
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    }
+}`
 }
 
-export async function loader() {
-    return new Response(JSON.stringify({ 
-        modes: ['transparent', 'uups', 'beacon'],
-        version: '1.0'
-    }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-    });
+export function generateUpgradeCode(mode: UpgradeMode, rawContractName: string): string {
+  const contractName = sanitizeContractName(rawContractName)
+  return [
+    loadTemplate(mode, contractName),
+    '',
+    storageLayoutHint(contractName),
+    '',
+    generateUpgradeScript(mode, contractName),
+  ].join('\n')
 }
 
-function generateFallbackCode(mode: UpgradeMode, contractName: string): string {
-    return `// Fallback generated code for ${contractName} with ${mode} proxy
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+export async function action({ request }: ActionFunctionArgs) {
+  const body = (await request.json().catch(() => ({}))) as { mode?: string; contractName?: string; contract?: string }
+  const mode = (body.mode ?? 'transparent') as UpgradeMode
+  const validModes: UpgradeMode[] = ['transparent', 'uups', 'beacon']
 
-// Storage layout check reminder:
-// Run: forge inspect <contract> storage-layout
-// Ensure new implementation maintains compatible storage layout before upgrading
+  if (!validModes.includes(mode)) {
+    return json({ error: 'Invalid mode. Must be transparent, uups, or beacon.' }, { status: 400 })
+  }
 
-contract ${contractName}${mode.charAt(0).toUpperCase() + mode.slice(1)}Proxy {
-    // ${mode === 'transparent' ? 'TransparentUpgradeableProxy' : mode === 'uups' ? 'ERC1967Proxy' : 'BeaconProxy'} implementation
+  const contractName = sanitizeContractName(body.contractName ?? body.contract)
+  try {
+    return json({
+      success: true,
+      mode,
+      contractName,
+      code: generateUpgradeCode(mode, contractName),
+    })
+  } catch (error) {
+    return json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate upgrade code',
+      },
+      { status: 500 },
+    )
+  }
 }
-`;
+
+export async function loader(_args: LoaderFunctionArgs) {
+  return json({
+    modes: ['transparent', 'uups', 'beacon'],
+    status: 'ok',
+  })
+}
+
+export const __testUtils = {
+  sanitizeContractName,
+  generateUpgradeScript,
 }
