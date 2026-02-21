@@ -44,6 +44,23 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Validate API keys
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "AGENT=claude" >> "$GITHUB_ENV"
+            echo "Using Claude Code (Anthropic)"
+          elif [ -n "$OPENAI_API_KEY" ]; then
+            echo "AGENT=codex" >> "$GITHUB_ENV"
+            echo "Using Codex (OpenAI)"
+          else
+            echo "::error::No API key configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in repo secrets."
+            echo "Go to: Settings > Secrets and variables > Actions > New repository secret"
+            exit 1
+          fi
+
       - name: Create task branch
         run: |
           BRANCH="task/${TASK_ID}"
@@ -51,24 +68,58 @@ jobs:
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
           echo "Task: $TASK_ID | Spec: $SPEC_FILE | Branch: $BRANCH"
 
-      - name: Decode spec from payload
+      - name: Load spec
         run: |
           SPECS_DIR="specs"
           mkdir -p "$SPECS_DIR"
-          if [ -f /tmp/spec_content.b64 ]; then
-            base64 -d /tmp/spec_content.b64 > "$SPECS_DIR/$SPEC_FILE"
+
+          # Priority 1: spec_content in repository_dispatch payload (base64)
+          SPEC_B64="${{ github.event.client_payload.spec_content }}"
+          if [ -n "$SPEC_B64" ]; then
+            echo "$SPEC_B64" | base64 -d > "$SPECS_DIR/$SPEC_FILE"
+            echo "Loaded spec from dispatch payload"
+          # Priority 2: spec already in repo
+          elif [ -f "$SPECS_DIR/$SPEC_FILE" ]; then
+            echo "Using existing spec: $SPECS_DIR/$SPEC_FILE"
+          # Priority 3: test spec
           else
-            printf '%s\n' '---' 'task_id: test-poc' 'project: shell' 'priority: 1' 'modifies: ["web-ui/app/utils/test-poc.ts"]' '---' '## Goal' 'Create a simple test utility to verify GitHub Actions dispatch works.' '## Constraints' '- Create one file only' '- No dependencies' '## Acceptance criteria' '- [ ] File web-ui/app/utils/test-poc.ts exists' '- [ ] File exports a function' > "$SPECS_DIR/$SPEC_FILE"
+            echo "Generating test spec"
+            cat > "$SPECS_DIR/$SPEC_FILE" << 'SPECEOF'
+          ---
+          task_id: test-poc
+          project: shell
+          priority: 1
+          modifies: ["web-ui/app/utils/test-poc.ts"]
+          ---
+          ## Goal
+          Create a simple test utility to verify GitHub Actions dispatch works.
+
+          ## Constraints
+          - Create one file only: web-ui/app/utils/test-poc.ts
+          - No external dependencies
+          - TypeScript only
+
+          ## Acceptance criteria
+          - [ ] File web-ui/app/utils/test-poc.ts exists
+          - [ ] File exports a function named `testDispatch`
+          - [ ] Function returns { ok: true, timestamp: Date.now() }
+          SPECEOF
           fi
-          echo "=== Spec content ==="
+
+          echo "=== Spec ($SPEC_FILE) ==="
           cat "$SPECS_DIR/$SPEC_FILE"
 
-      - name: Install Codex CLI
+      - name: Install LLM CLI
         run: |
-          npm install -g @openai/codex 2>&1 || npm install -g codex 2>&1 || true
-          which codex && codex --version || echo "Codex not found via npm"
-          # Fallback: try npx
-          npx @openai/codex --version 2>/dev/null || echo "Will use npx at runtime"
+          if [ "$AGENT" = "claude" ]; then
+            echo "Installing Claude Code CLI..."
+            npm install -g @anthropic-ai/claude-code@latest 2>&1
+            claude --version
+          else
+            echo "Installing Codex CLI..."
+            npm install -g @openai/codex@latest 2>&1
+            codex --version
+          fi
 
       - name: Extract prompt from spec
         run: |
@@ -82,29 +133,42 @@ jobs:
 
       - name: Execute task
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           PROMPT=$(cat /tmp/task-prompt.txt)
 
-          FULL_PROMPT="You are executing a coding task. Implement the spec below.
-          IMPORTANT: You MUST create or modify actual files. Do not just describe.
+          FULL_PROMPT="You are executing a coding task in a Web3 smart contract IDE project (Shell).
+          IMPORTANT: You MUST create or modify actual files. Do not just describe changes.
           Working directory is the project root. Use relative paths.
 
           ${PROMPT}
 
-          After implementing, run any tests mentioned in the spec."
+          After implementing, verify the files you created/modified exist and are valid."
 
-          echo "[$(date -u +%Y-%m-%dT%H:%M:%S)] Starting task execution"
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%S)] Starting $AGENT execution"
 
-          if command -v codex &>/dev/null; then
-            timeout 2400 codex exec --full-auto --skip-git-repo-check "$FULL_PROMPT" 2>&1 | tee task.log || echo "Codex exited with $?"
-          elif npx @openai/codex --version &>/dev/null 2>&1; then
-            timeout 2400 npx @openai/codex exec --full-auto --skip-git-repo-check "$FULL_PROMPT" 2>&1 | tee task.log || echo "Codex exited with $?"
+          if [ "$AGENT" = "claude" ]; then
+            # Claude Code: non-interactive prompt mode
+            timeout 2400 claude -p "$FULL_PROMPT" \
+              --dangerously-skip-permissions \
+              --output-format text \
+              2>&1 | tee task.log || {
+              EXIT=$?
+              echo "Claude exited with code $EXIT"
+            }
           else
-            echo "No LLM CLI available — need to configure secrets and install codex"
-            echo "Set OPENAI_API_KEY in repo Settings > Secrets"
-            exit 1
+            # Codex: full-auto exec mode
+            timeout 2400 codex exec \
+              --full-auto \
+              --skip-git-repo-check \
+              "$FULL_PROMPT" 2>&1 | tee task.log || {
+              EXIT=$?
+              echo "Codex exited with code $EXIT"
+            }
           fi
+
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%S)] Execution finished"
 
       - name: Check for changes
         id: changes
@@ -113,10 +177,11 @@ jobs:
           CHANGED=$(git diff --cached --stat | tail -1 || echo "")
           if [ -n "$CHANGED" ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
-            echo "Changes: $CHANGED"
+            echo "Changes detected:"
+            git diff --cached --stat
           else
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
-            echo "No changes produced"
+            echo "::warning::No file changes produced"
           fi
 
       - name: Commit and push
@@ -125,28 +190,42 @@ jobs:
           git config user.name "oyster-dispatch[bot]"
           git config user.email "dispatch@oysterlabs.ai"
           git add -A
-          git commit -m "task/${TASK_ID}: auto-dispatch from GitHub Actions"
+          git commit -m "task/${TASK_ID}: auto-dispatch via GitHub Actions
+
+          Spec: ${SPEC_FILE}
+          Agent: ${AGENT}
+          Runner: github-actions"
           git push origin "$BRANCH"
-          echo "Pushed to $BRANCH"
+          echo "::notice::Pushed to branch task/${TASK_ID}"
 
       - name: Create summary
         if: always()
         run: |
           echo "## Task Result" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Task**: $TASK_ID" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Spec**: $SPEC_FILE" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Branch**: ${BRANCH:-unknown}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Changes**: ${{ steps.changes.outputs.has_changes }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Task** | \`$TASK_ID\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Spec** | \`$SPEC_FILE\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Agent** | \`${AGENT:-unknown}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Branch** | \`${BRANCH:-unknown}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Changes** | ${{ steps.changes.outputs.has_changes }} |" >> "$GITHUB_STEP_SUMMARY"
           if [ -f task.log ]; then
             LOG_SIZE=$(wc -c < task.log)
-            echo "- **Log**: ${LOG_SIZE} bytes" >> "$GITHUB_STEP_SUMMARY"
+            echo "| **Log** | ${LOG_SIZE} bytes |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "<details><summary>Last 50 lines of log</summary>" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -50 task.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "</details>" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: task-logs
+          name: task-logs-${{ env.TASK_ID }}
           path: |
             task.log
             specs/
