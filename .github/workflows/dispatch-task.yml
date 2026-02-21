@@ -1,0 +1,176 @@
+name: Dispatch Task (POC)
+
+# Triggered by: Temporal, manual, or API
+on:
+  workflow_dispatch:
+    inputs:
+      spec_file:
+        description: 'Spec filename (e.g. S01-fork-bolt-diy.md)'
+        required: true
+        type: string
+      task_id:
+        description: 'Task ID (e.g. shell-0)'
+        required: true
+        type: string
+      project:
+        description: 'Project name'
+        required: false
+        default: 'shell'
+        type: string
+
+  repository_dispatch:
+    types: [dispatch-task]
+
+permissions:
+  contents: write
+
+jobs:
+  execute-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TASK_ID: ${{ inputs.task_id || github.event.client_payload.task_id || 'test-poc' }}
+      SPEC_FILE: ${{ inputs.spec_file || github.event.client_payload.spec_file || 'test.md' }}
+      PROJECT: ${{ inputs.project || github.event.client_payload.project || 'shell' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create task branch
+        run: |
+          BRANCH="task/${TASK_ID}"
+          git checkout -b "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          echo "Task: $TASK_ID | Spec: $SPEC_FILE | Branch: $BRANCH"
+
+      - name: Decode spec from payload
+        run: |
+          SPECS_DIR="specs"
+          mkdir -p "$SPECS_DIR"
+          # Spec content is base64-encoded in repository_dispatch payload
+          if [ -f /tmp/spec_content.b64 ]; then
+            base64 -d /tmp/spec_content.b64 > "$SPECS_DIR/$SPEC_FILE"
+          else
+            # Fallback: create a simple test spec for manual trigger
+            cat > "$SPECS_DIR/$SPEC_FILE" << 'SPECEOF'
+---
+task_id: test-poc
+project: shell
+priority: 1
+modifies: ["web-ui/app/utils/test-poc.ts"]
+---
+## Goal
+Create a simple test utility file to verify GitHub Actions dispatch works.
+
+## Constraints
+- Create one file only
+- No dependencies
+
+## Acceptance criteria
+- [ ] File web-ui/app/utils/test-poc.ts exists
+- [ ] File exports a function
+SPECEOF
+          fi
+          echo "=== Spec content ==="
+          cat "$SPECS_DIR/$SPEC_FILE"
+
+      - name: Install OpenCode
+        run: |
+          curl -fsSL https://opencode.ai/install.sh | bash || {
+            echo "OpenCode install failed, trying npm"
+            npm install -g @opencode/cli 2>/dev/null || true
+          }
+          export PATH="$HOME/.opencode/bin:$PATH"
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+          which opencode && opencode --version || echo "OpenCode not available"
+
+      - name: Extract prompt from spec
+        run: |
+          SPEC_PATH="specs/$SPEC_FILE"
+          PROMPT=$(awk '/^---$/{n++; next} n>=2{print}' "$SPEC_PATH" 2>/dev/null | head -500)
+          if [ -z "$PROMPT" ]; then
+            PROMPT=$(cat "$SPEC_PATH")
+          fi
+          echo "$PROMPT" > /tmp/task-prompt.txt
+          echo "Prompt extracted ($(wc -c < /tmp/task-prompt.txt) bytes)"
+
+      - name: Execute task
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          export PATH="$HOME/.opencode/bin:$PATH"
+          PROMPT=$(cat /tmp/task-prompt.txt)
+
+          FULL_PROMPT="You are executing a coding task. Implement the spec below.
+          IMPORTANT: You MUST create or modify actual files. Do not just describe.
+          Working directory is the project root. Use relative paths.
+
+          ${PROMPT}
+
+          After implementing, run any tests mentioned in the spec."
+
+          echo "[$(date -u +%Y-%m-%dT%H:%M:%S)] Starting task execution"
+
+          if command -v opencode &>/dev/null; then
+            timeout 2400 opencode run -m "opencode/gpt-5-nano" --dir . "$FULL_PROMPT" 2>&1 | tee task.log || {
+              echo "OpenCode exited with $?"
+            }
+          else
+            echo "No LLM CLI available"
+            exit 1
+          fi
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          CHANGED=$(git diff --cached --stat | tail -1 || echo "")
+          if [ -n "$CHANGED" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes: $CHANGED"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No changes produced"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "oyster-dispatch[bot]"
+          git config user.email "dispatch@oysterlabs.ai"
+          git add -A
+          git commit -m "task/${TASK_ID}: auto-dispatch from GitHub Actions"
+          git push origin "$BRANCH"
+          echo "Pushed to $BRANCH"
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## Task Result" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Task**: $TASK_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Spec**: $SPEC_FILE" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Branch**: ${BRANCH:-unknown}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Changes**: ${{ steps.changes.outputs.has_changes }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f task.log ]; then
+            LOG_SIZE=$(wc -c < task.log)
+            echo "- **Log**: ${LOG_SIZE} bytes" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-logs
+          path: |
+            task.log
+            specs/
+          retention-days: 7
