@@ -88,6 +88,7 @@ export function TestButton() {
       className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs border border-[#39ff14]/70 bg-[#041109] text-[#b2ffbf] hover:text-[#d3ffda] [&:not(:disabled,.disabled)]:hover:bg-[#0a1f12] [&:not(:disabled,.disabled)]:hover:shadow-[0_0_16px_rgba(57,255,20,0.45)] outline-[#39ff14] flex gap-1.5 transition-all duration-150"
       title={`Run ${chainType.toUpperCase()} tests`}
       type="button"
+      data-tour="test"
     >
       <div className={testRun.isRunning ? 'i-ph:spinner-gap animate-spin' : 'i-ph:flask'} />
       <span>{testRun.isRunning ? 'Running' : 'Test'}</span>

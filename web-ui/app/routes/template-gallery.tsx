@@ -14,7 +14,7 @@ export default function TemplateGalleryPage() {
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
       <BackgroundRays />
       <Header />
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8" data-tour="template-gallery">
         <TemplateGallery />
       </div>
     </div>

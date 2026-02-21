@@ -5,6 +5,7 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
+import { useOnboardingTour } from '~/components/onboarding/OnboardingTour';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -32,6 +33,13 @@ export default function SettingsTab() {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         };
   });
+  const { resetOnboarding, startTour } = useOnboardingTour();
+
+  const handleRestartOnboarding = () => {
+    resetOnboarding();
+    startTour();
+    toast.success('Onboarding tour restarted!');
+  };
 
   useEffect(() => {
     setCurrentTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -209,6 +217,33 @@ export default function SettingsTab() {
             </div>
           </div>
         </div>
+      </motion.div>
+
+      {/* Onboarding Tour */}
+      <motion.div
+        className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <div className="i-ph:rocket-launch-fill w-4 h-4 text-[#00ff88]" />
+          <span className="text-sm font-medium text-bolt-elements-textPrimary">Onboarding Tour</span>
+        </div>
+
+        <button
+          onClick={handleRestartOnboarding}
+          className={classNames(
+            'w-full px-3 py-2 rounded-lg text-sm',
+            'bg-[#00ff88]/10 border border-[#00ff88]/50',
+            'text-[#00ff88] font-medium',
+            'hover:bg-[#00ff88]/20 transition-all duration-200',
+            'flex items-center justify-center gap-2',
+          )}
+        >
+          <div className="i-ph:play-fill" />
+          Restart Onboarding Tour
+        </button>
       </motion.div>
     </div>
   );

@@ -11,7 +11,10 @@ export function ChainSelector() {
   const activeChainType = useStore(chainType);
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-[#2c303d] bg-[#0a0a0f] p-1">
+    <div
+      className="flex items-center gap-1 rounded-full border border-[#2c303d] bg-[#0a0a0f] p-1"
+      data-tour="chain-selector"
+    >
       {CHAIN_OPTIONS.map(({ label, value }) => {
         const selected = activeChainType === value;
 
