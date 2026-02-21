@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "chain": "evm",
+  "runner": "forge",
+  "startedAt": "2026-02-21T06:31:44.508Z",
+  "finishedAt": "2026-02-21T06:31:44.854Z",
+  "command": "forge test",
+  "exitCode": 0,
+  "summary": "✅ Tests passed (2 passing)",
+  "details": {
+    "passed": 2,
+    "failed": 0,
+    "errors": []
+  }
+}

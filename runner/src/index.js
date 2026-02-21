@@ -111,9 +111,10 @@ const runCommand = async (cmd, args, cwd = process.cwd()) => {
   });
 };
 
-const writeReport = (filename, data) => {
-  ensureDir(REPORTS_DIR);
-  const filepath = join(REPORTS_DIR, filename);
+const writeReport = (filename, data, dir = cwd()) => {
+  const reportsDir = join(dir, REPORTS_DIR);
+  ensureDir(reportsDir);
+  const filepath = join(reportsDir, filename);
   writeFileSync(filepath, JSON.stringify(data, null, 2));
   log(`Report written: ${filepath}`, 'success');
   return filepath;
@@ -162,9 +163,9 @@ const actionTest = async (options) => {
   
   const finishedAt = nowIso();
   
-  // Parse test results
-  const passed = (result.stdout.match(/(\d+) passing/) || [])[1] || '0';
-  const failed = (result.stdout.match(/(\d+) failing/) || [])[1] || '0';
+  // Parse test results - handle both "X passing" and "X passed" formats
+  const passed = (result.stdout.match(/(\d+)\s+passing/) || result.stdout.match(/(\d+)\s+passed/) || [])[1] || '0';
+  const failed = (result.stdout.match(/(\d+)\s+failing/) || result.stdout.match(/(\d+)\s+failed/) || [])[1] || '0';
   
   /** @type {TestReport} */
   const report = {
@@ -186,7 +187,7 @@ const actionTest = async (options) => {
   };
   
   const filename = `test.${chain}.${runner}.json`;
-  writeReport(filename, report);
+  writeReport(filename, report, projectPath);
   
   return report;
 };
@@ -232,7 +233,7 @@ const actionBuild = async (options) => {
   };
   
   const filename = `build.${chain}.${runner}.json`;
-  writeReport(filename, report);
+  writeReport(filename, report, projectPath);
   
   return report;
 };
@@ -304,7 +305,7 @@ const actionDeploy = async (options) => {
   };
   
   const filename = `deploy.${chain}.${options.network || 'sepolia'}.json`;
-  writeReport(filename, report);
+  writeReport(filename, report, projectPath);
   
   return report;
 };
@@ -355,7 +356,7 @@ const actionAudit = async (options) => {
   };
   
   const filename = `audit.${chain}.slither.json`;
-  writeReport(filename, report);
+  writeReport(filename, report, projectPath);
   
   return report;
 };
