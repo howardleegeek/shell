@@ -1,34 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 /// @title Simple Vault - Demo Contract
 /// @notice A simple vault contract for demo purposes
 /// @dev Has a deliberate bug for testing the workflow
-contract SimpleVault is ReentrancyGuard, Ownable {
+contract SimpleVault {
     
     mapping(address => uint256) public balances;
     
-    event Deposited(address indexed user, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
-    
-    constructor() Ownable(msg.sender) {}
     
     /// @notice Deposit ETH into the vault
     function deposit() external payable {
         require(msg.value > 0, "Must send ETH");
         balances[msg.sender] += msg.value;
-        emit Deposited(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
     
     /// @notice Withdraw ETH from the vault
-    /// @dev BUG: Missing reentrancy guard on withdraw
-    function withdraw(uint256 amount) external nonReentrant {
+    function withdraw(uint256 amount) external {
         require(balances[msg.sender] >= amount, "Insufficient balance");
         
-        // BUG: Effects after transfers (will be fixed)
         balances[msg.sender] -= amount;
         
         (bool success, ) = msg.sender.call{value: amount}("");
