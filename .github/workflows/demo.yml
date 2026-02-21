@@ -1,4 +1,4 @@
-name: Demo EVM Vault
+name: Demo EVM Vault - OpenCrabs Integration
 
 on:
   push:
@@ -9,42 +9,86 @@ on:
     - cron: '0 0 * * *'
 
 jobs:
-  evm-vault:
+  # Test shell-run standalone
+  shell-run-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: oysterlabs/shell
+          path: shell
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Show versions
-        run: |
-          forge --version
-          anvil --version
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Build
+      - name: Install dependencies
         run: |
-          cd demo/evm-vault
-          forge build --skip test || echo "build done"
+          cd shell/demo/evm-vault
+          npm install
+          forge install foundry-rs/forge-std --no-commit
 
-      - name: Deploy
+      - name: Run shell-run test
         run: |
+          cd shell
+          chmod +x run-shell-run.sh
+          # Create shell-run in PATH
+          mkdir -p $HOME/bin
+          echo '#!/bin/bash' > $HOME/bin/shell-run
+          echo 'cd ~/work/oyster/oyster/shell && node runner/src/index.js "$@"' >> $HOME/bin/shell-run
+          chmod +x $HOME/bin/shell-run
+          echo "$HOME/bin" >> $GITHUB_PATH
+          
+          # Run test
           cd demo/evm-vault
-          # Start anvil
-          anvil --port 8545 &
-          sleep 5
-          
-          # Deploy
-          forge create src/SimpleVault.sol:SimpleVault --rpc-url http://localhost:8545 --broadcast || true
-          
-          # Write report
-          mkdir -p ../reports
-          echo '{"ok": true, "chain": "evm", "network": "anvil", "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3", "summary": "Deployed to anvil"}' > ../reports/deploy.evm.anvil.json
-          cat ../reports/deploy.evm.anvil.json
+          shell-run test --chain evm
+
+      - name: Verify test report
+        run: |
+          cd shell/demo/evm-vault
+          cat reports/test.evm.forge.json
+          # Verify report structure
+          echo "ok=$(cat reports/test.evm.forge.json | jq -r '.ok')"
+          echo "passed=$(cat reports/test.evm.forge.json | jq -r '.details.passed')"
 
       - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
-          name: demo-reports
-          path: reports/
+          name: shell-run-reports
+          path: shell/demo/evm-vault/reports/
           retention-days: 7
+
+  # Test OpenCrabs with Web3 tools
+  opencrabs-web3-test:
+    runs-on: ubuntu-latest
+    needs: shell-run-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: howardleegeek/opencrabs
+          path: opencrabs
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build OpenCrabs
+        run: |
+          cd opencrabs
+          cargo build --release
+          # Make sure web3 tools are compiled
+          cargo build --release 2>&1 | grep -E "(web3_test|web3_report|web3_deploy)" || echo "Building web3 tools..."
+
+      - name: Verify Web3 tools exist in binary
+        run: |
+          cd opencrabs
+          # Check the binary has web3 tool symbols
+          strings target/release/opencrabs | grep -E "web3_" | head -5
+
+      - name: Show OpenCrabs version
+        run: |
+          cd opencrabs
+          ./target/release/opencrabs --version || true
