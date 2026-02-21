@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { AbiFunction } from '../../../lib/calldata';
+// Re-export AbiFunction for tests that import from this module
+import type { AbiFunction as AbiFunctionType } from '../../../lib/calldata';
+export type AbiFunction = AbiFunctionType;
 import { decodeCalldata, encodeCalldata, lookup4byte } from '../../../lib/calldata';
 
 // Sample ABI used for decoding/encoding. In the real app this will be
@@ -64,7 +66,7 @@ const CalldataCodec: React.FC = () => {
       return (
         <div>
           <div><strong>Function:</strong> {decodeResult.functionName}</div>
-          <div><strong>Decoded args:</strong> {JSON.stringify(decodeResult.args)}</div>
+          <div><strong>Decoded params:</strong> {JSON.stringify(decodeResult.params ?? decodeResult.args)}</div>
         </div>
       );
     }
