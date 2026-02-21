@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// Minimal test contract without external imports
-contract TestSimpleVault {
+// Minimal vault contract
+contract SimpleVault {
     
     mapping(address => uint256) public balances;
     
