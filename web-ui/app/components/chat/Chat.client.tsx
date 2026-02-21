@@ -28,6 +28,7 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
+import { chainStore } from '~/lib/stores/chain';
 
 const logger = createScopedLogger('Chat');
 
@@ -116,6 +117,10 @@ export const ChatImpl = memo(
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
+    const activeChain = useStore(chainStore);
+    const isMCPInitialized = useMCPStore((state) => state.isInitialized);
+    const initializeMCP = useMCPStore((state) => state.initialize);
+    const syncMCPChainMode = useMCPStore((state) => state.syncChainMode);
 
     const {
       messages,
@@ -190,6 +195,36 @@ export const ChatImpl = memo(
         });
       }
     }, [model, provider, searchParams]);
+
+    useEffect(() => {
+      let cancelled = false;
+
+      async function syncMcpForChainMode() {
+        if (!isMCPInitialized) {
+          await initializeMCP();
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        await syncMCPChainMode(activeChain.chainType, activeChain.network);
+      }
+
+      syncMcpForChainMode().catch((syncError) => {
+        logger.error('Failed to sync MCP server for chain mode', syncError);
+      });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      activeChain.chainType,
+      activeChain.network,
+      initializeMCP,
+      isMCPInitialized,
+      syncMCPChainMode,
+    ]);
 
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();

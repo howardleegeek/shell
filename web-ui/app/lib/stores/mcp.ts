@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { MCPConfig, MCPServerTools } from '~/lib/services/mcpService';
+import { buildChainMcpConfig } from '~/lib/services/chainMcpConfig';
+import type { ChainType } from '~/lib/stores/chain';
 
 const MCP_SETTINGS_KEY = 'mcp_settings';
 const isBrowser = typeof window !== 'undefined';
@@ -11,9 +13,7 @@ type MCPSettings = {
 
 const defaultSettings = {
   maxLLMSteps: 5,
-  mcpConfig: {
-    mcpServers: {},
-  },
+  mcpConfig: buildChainMcpConfig('svm', 'devnet') as MCPConfig,
 } satisfies MCPSettings;
 
 type Store = {
@@ -27,6 +27,7 @@ type Store = {
 type Actions = {
   initialize: () => Promise<void>;
   updateSettings: (settings: MCPSettings) => Promise<void>;
+  syncChainMode: (chainType: ChainType, network: string) => Promise<void>;
   checkServersAvailabilities: () => Promise<void>;
 };
 
@@ -57,6 +58,8 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
         }
       } else {
         localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+        const serverTools = await updateServerConfig(defaultSettings.mcpConfig);
+        set(() => ({ settings: defaultSettings, serverTools }));
       }
     }
 
@@ -82,6 +85,21 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
     } finally {
       set(() => ({ isUpdatingConfig: false }));
     }
+  },
+  syncChainMode: async (chainType: ChainType, networkName: string) => {
+    const currentSettings = get().settings;
+    const nextConfig = buildChainMcpConfig(chainType, networkName) as MCPConfig;
+    const currentConfigStr = JSON.stringify(currentSettings.mcpConfig);
+    const nextConfigStr = JSON.stringify(nextConfig);
+
+    if (currentConfigStr === nextConfigStr) {
+      return;
+    }
+
+    await get().updateSettings({
+      ...currentSettings,
+      mcpConfig: nextConfig,
+    });
   },
   checkServersAvailabilities: async () => {
     const response = await fetch('/api/mcp-check', {
