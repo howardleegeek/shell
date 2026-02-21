@@ -55,29 +55,10 @@ jobs:
         run: |
           SPECS_DIR="specs"
           mkdir -p "$SPECS_DIR"
-          # Spec content is base64-encoded in repository_dispatch payload
           if [ -f /tmp/spec_content.b64 ]; then
             base64 -d /tmp/spec_content.b64 > "$SPECS_DIR/$SPEC_FILE"
           else
-            # Fallback: create a simple test spec for manual trigger
-            cat > "$SPECS_DIR/$SPEC_FILE" << 'SPECEOF'
----
-task_id: test-poc
-project: shell
-priority: 1
-modifies: ["web-ui/app/utils/test-poc.ts"]
----
-## Goal
-Create a simple test utility file to verify GitHub Actions dispatch works.
-
-## Constraints
-- Create one file only
-- No dependencies
-
-## Acceptance criteria
-- [ ] File web-ui/app/utils/test-poc.ts exists
-- [ ] File exports a function
-SPECEOF
+            printf '%s\n' '---' 'task_id: test-poc' 'project: shell' 'priority: 1' 'modifies: ["web-ui/app/utils/test-poc.ts"]' '---' '## Goal' 'Create a simple test utility to verify GitHub Actions dispatch works.' '## Constraints' '- Create one file only' '- No dependencies' '## Acceptance criteria' '- [ ] File web-ui/app/utils/test-poc.ts exists' '- [ ] File exports a function' > "$SPECS_DIR/$SPEC_FILE"
           fi
           echo "=== Spec content ==="
           cat "$SPECS_DIR/$SPEC_FILE"
