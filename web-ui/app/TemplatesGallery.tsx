@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import registry from '../../templates/registry.json'
+import registryRaw from '../../templates/registry.json'
 
 export type TemplateItem = {
   id: string
@@ -49,13 +49,55 @@ export const TemplateGallery: React.FC = () => {
   const [tab, setTab] = useState<'SVM' | 'EVM'>('SVM')
   const [query, setQuery] = useState('')
 
-  const items = registry as TemplateItem[]
-  const filtered = items.filter((t) => t.chain === tab && t.name.toLowerCase().includes(query.toLowerCase()))
+  // Normalize registry shape to a flat array of TemplateItem
+  const itemsFromRegistry: TemplateItem[] = useMemo(() => {
+    // If registry.json uses a nested structure
+    const reg: any = registryRaw
+    const flat: TemplateItem[] = []
+    if (reg && typeof reg === 'object') {
+      if (reg.templates && typeof reg.templates === 'object') {
+        const evm = reg.templates.evm || {}
+        Object.entries(evm).forEach(([id, data]: any) => {
+          flat.push({
+            id,
+            name: data.name,
+            description: data.description,
+            chain: 'EVM',
+            category: 'contract',
+            icon: data.icon || '',
+            promptTemplate: data.promptTemplate || '',
+          })
+        })
+        const sol = reg.templates.solana || {}
+        Object.entries(sol).forEach(([id, data]: any) => {
+          flat.push({
+            id,
+            name: data.name,
+            description: data.description,
+            chain: 'SVM',
+            category: 'contract',
+            icon: data.icon || '',
+            promptTemplate: data.promptTemplate || '',
+          })
+        })
+      } else if (Array.isArray(reg)) {
+        reg.forEach((t: any) => flat.push(t))
+      }
+    }
+    // If registry.json is already a flat array, return as-is
+    if (flat.length > 0) return flat
+    // Fallback to attempting to coerce as a flat array
+    return (reg as TemplateItem[])
+  }, [])
+
+  const filtered = itemsFromRegistry.filter((t) => t.chain === tab && t.name.toLowerCase().includes(query.toLowerCase()))
 
   const onUse = (tmpl: TemplateItem) => {
     // In a real app, this would navigate to AI chat with a prefilled prompt
     // For this mock, we'll just log to console.
-    console.log('Use template', tmpl.id)
+    const prompt = tmpl.promptTemplate || ''
+    const url = `/?prompt=${encodeURIComponent(prompt)}`
+    window.location.assign(url)
   }
 
   const containerStyle: React.CSSProperties = { padding: 16, fontFamily: 'system-ui, Arial' }
