@@ -80,11 +80,11 @@ OpenCode 核心 (不动)
 
 ### Phase 2 - 当前
 
-- [ ] OpenCode 插件 (web3-tools.ts)
-- [ ] 模板系统
+- [x] OpenCode 插件 (web3-tools.ts)
+- [x] 模板系统
 - [ ] 基础测试用例生成
-- [ ] Hardhat 集成
-- [ ] Anchor (Solana) 支持
+- [x] Hardhat 集成 (in plugin)
+- [x] Anchor (Solana) 支持 (in plugin)
 
 ### Phase 3 - 桌面 App
 
@@ -135,6 +135,30 @@ OpenCode 核心 (不动)
                  │ CLI
                  ▼
          Anchor / Forge / Hardhat
+```
+
+## Integrations (可直接复用/改造的开源项目)
+
+| Project | 作用 | Shell 集成方式 |
+|---------|------|---------------|
+| [Web3CLI](https://github.com/shivatmax/web3cli) | AI→Solidity CLI | 参考其自然语言→合约逻辑 |
+| [Código](https://github.com/Codigo-io/platform) | AI→Web3 代码生成 | 模板生成逻辑 |
+| [Solana Web3.js MCP Server](https://github.com/FrankGenGo/solana-web3js-mcp-server) | AI↔Solana 链桥 | MCP 协议接入 |
+| [SolAgent](https://github.com/openpaperz/SolAgent) | Solidity 多 agent 框架 | 验证循环逻辑 |
+| [Eclipse Theia](https://github.com/eclipse-theia/theia) | 开源 IDE 框架 | 桌面 IDE 基础 |
+
+## 技术栈组合
+
+```
+UI / IDE (Eclipse Theia / Tauri Desktop)
+        ↓
+AI Agent Layer (OpenCode / AutoGPT)
+        ↓
+Model Context Bridge (MCP / Solana Web3.js)
+        ↓
+Web3 DevOps Actions (Shell Skills + Plugins)
+        ↓
+Reporting + Validation Pipeline
 ```
 
 ## 插件使用
