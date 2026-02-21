@@ -63,15 +63,12 @@ jobs:
           echo "=== Spec content ==="
           cat "$SPECS_DIR/$SPEC_FILE"
 
-      - name: Install OpenCode
+      - name: Install Codex CLI
         run: |
-          curl -fsSL https://opencode.ai/install.sh | bash || {
-            echo "OpenCode install failed, trying npm"
-            npm install -g @opencode/cli 2>/dev/null || true
-          }
-          export PATH="$HOME/.opencode/bin:$PATH"
-          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
-          which opencode && opencode --version || echo "OpenCode not available"
+          npm install -g @openai/codex 2>&1 || npm install -g codex 2>&1 || true
+          which codex && codex --version || echo "Codex not found via npm"
+          # Fallback: try npx
+          npx @openai/codex --version 2>/dev/null || echo "Will use npx at runtime"
 
       - name: Extract prompt from spec
         run: |
@@ -86,9 +83,7 @@ jobs:
       - name: Execute task
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          export PATH="$HOME/.opencode/bin:$PATH"
           PROMPT=$(cat /tmp/task-prompt.txt)
 
           FULL_PROMPT="You are executing a coding task. Implement the spec below.
@@ -101,12 +96,13 @@ jobs:
 
           echo "[$(date -u +%Y-%m-%dT%H:%M:%S)] Starting task execution"
 
-          if command -v opencode &>/dev/null; then
-            timeout 2400 opencode run -m "opencode/gpt-5-nano" --dir . "$FULL_PROMPT" 2>&1 | tee task.log || {
-              echo "OpenCode exited with $?"
-            }
+          if command -v codex &>/dev/null; then
+            timeout 2400 codex exec --full-auto --skip-git-repo-check "$FULL_PROMPT" 2>&1 | tee task.log || echo "Codex exited with $?"
+          elif npx @openai/codex --version &>/dev/null 2>&1; then
+            timeout 2400 npx @openai/codex exec --full-auto --skip-git-repo-check "$FULL_PROMPT" 2>&1 | tee task.log || echo "Codex exited with $?"
           else
-            echo "No LLM CLI available"
+            echo "No LLM CLI available — need to configure secrets and install codex"
+            echo "Set OPENAI_API_KEY in repo Settings > Secrets"
             exit 1
           fi
 
