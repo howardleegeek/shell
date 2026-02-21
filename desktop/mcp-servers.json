@@ -1,0 +1,38 @@
+{
+  "servers": {
+    "solana": {
+      "name": "Solana Web3 MCP",
+      "description": "Solana blockchain interaction via MCP",
+      "command": "npx",
+      "args": ["-y", "solana-web3js-mcp-server"],
+      "env": {
+        "RPC_URL": "https://api.devnet.solana.com",
+        "KEYPAIR_PATH": "~/.config/solana/id.json"
+      },
+      "status": "stopped"
+    },
+    "evm": {
+      "name": "EVM Web3 MCP", 
+      "description": "EVM blockchain interaction via MCP",
+      "command": "npx",
+      "args": ["-y", "web3-mcp-hub"],
+      "env": {
+        "RPC_URLS": {
+          "sepolia": "https://rpc.sepolia.org",
+          "mainnet": "https://eth-mainnet.g.alchemy.com/v2/your-key"
+        }
+      },
+      "status": "stopped"
+    }
+  },
+  "defaults": {
+    "solana": {
+      "network": "devnet",
+      "timeout": 30000
+    },
+    "evm": {
+      "network": "sepolia",
+      "timeout": 30000
+    }
+  }
+}

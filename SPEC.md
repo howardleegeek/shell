@@ -94,6 +94,47 @@ OpenCode 核心 (不动)
 | `eth_sendTransaction` | 发送交易 |
 | `eth_deployContract` | 部署合约 |
 
+#### MCP Configuration
+
+```json
+// mcp-servers.json (Shell 桌面配置)
+{
+  "servers": {
+    "solana": {
+      "command": "npx",
+      "args": ["-y", "solana-web3js-mcp-server"],
+      "env": {
+        "RPC_URL": "https://api.devnet.solana.com",
+        "KEYPAIR_PATH": "~/.config/solana/id.json"
+      }
+    },
+    "evm": {
+      "command": "npx", 
+      "args": ["-y", "web3-mcp-hub"],
+      "env": {
+        "RPC_URLS": {
+          "sepolia": "https://rpc.sepolia.org",
+          "mainnet": "https://eth-mainnet.g.alchemy.com/v2/..."
+        }
+      }
+    }
+  }
+}
+```
+
+#### Tool Interface Standard
+
+统一的工具接口规范（最小集合）：
+
+| Interface | 功能 | Output |
+|-----------|------|--------|
+| `chain.balance` | 查询余额 | `reports/chain.balance.json` |
+| `chain.airdrop` | 请求测试币 | `reports/chain.airdrop.json` |
+| `chain.network_status` | 网络状态 | `reports/chain.status.json` |
+| `project.test` | 运行测试 | `reports/test.*.json` |
+| `project.deploy_testnet` | 部署到测试网 | `reports/deploy.*.json` |
+| `report.bundle` | 汇总报告 | `reports/bundle.json` |
+
 ### E. Unified Reports Schema
 
 所有测试/部署输出统一到 `reports/` 目录：

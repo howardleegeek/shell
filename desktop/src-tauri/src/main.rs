@@ -9,10 +9,13 @@
 use tauri::Manager;
 
 mod commands;
+use commands::{McpServerState, ServerState};
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .manage(ServerState::default())
+        .manage(McpServerState::default())
         .setup(|app| {
             // Get the main window
             let window = app.get_window("main").unwrap();
@@ -29,6 +32,9 @@ fn main() {
             commands::stop_opencode_server,
             commands::run_web3_command,
             commands::get_server_status,
+            commands::start_mcp_server,
+            commands::stop_mcp_server,
+            commands::get_mcp_servers_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
