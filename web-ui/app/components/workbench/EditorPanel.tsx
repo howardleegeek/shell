@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import * as Tabs from '@radix-ui/react-tabs';
 import {
@@ -9,6 +9,7 @@ import {
   type OnChangeCallback as OnEditorChange,
   type OnSaveCallback as OnEditorSave,
   type OnScrollCallback as OnEditorScroll,
+  type EditorContextMenuPayload,
 } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { PanelHeader } from '~/components/ui/PanelHeader';
 import { PanelHeaderButton } from '~/components/ui/PanelHeaderButton';
@@ -25,6 +26,7 @@ import { workbenchStore } from '~/lib/stores/workbench';
 import { Search } from './Search'; // <-- Ensure Search is imported
 import { classNames } from '~/utils/classNames'; // <-- Import classNames if not already present
 import { LockManager } from './LockManager'; // <-- Import LockManager
+import { ShareSnippet } from './ShareSnippet';
 
 interface EditorPanelProps {
   files?: FileMap;
@@ -62,6 +64,7 @@ export const EditorPanel = memo(
 
     const theme = useStore(themeStore);
     const showTerminal = useStore(workbenchStore.showTerminal);
+    const [contextMenuPayload, setContextMenuPayload] = useState<EditorContextMenuPayload | null>(null);
 
     const activeFileSegments = useMemo(() => {
       if (!editorDocument) {
@@ -173,6 +176,16 @@ export const EditorPanel = memo(
                   onScroll={onEditorScroll}
                   onChange={onEditorChange}
                   onSave={onFileSave}
+                  onContextMenu={(payload) => {
+                    setContextMenuPayload(payload);
+                  }}
+                />
+                <ShareSnippet
+                  payload={contextMenuPayload}
+                  doc={editorDocument}
+                  onClose={() => {
+                    setContextMenuPayload(null);
+                  }}
                 />
               </div>
             </Panel>
