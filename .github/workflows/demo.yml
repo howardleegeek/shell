@@ -42,9 +42,16 @@ jobs:
 
       # 1) First test should FAIL (deliberate event mismatch)
       - name: Test (expected fail)
-        working-directory: demo/evm-vault
         run: |
+          # Run from repo root
+          cd $GITHUB_WORKSPACE
+          
+          # Install demo deps first
+          cd demo/evm-vault
+          forge install
           cd ../..
+          
+          # Run test via shell-run
           node runner/src/index.js test --chain evm
           
           # Verify report exists and shows failure
@@ -57,19 +64,14 @@ jobs:
 
       # 2) Apply patch: fix event name (Deposited -> Deposit)
       - name: Apply patch
-        working-directory: demo/evm-vault
         run: |
-          # Fix event name mismatch: contract emits Deposited, test expects Deposit
-          sed -i 's/event Deposited/event Deposit/g' src/SimpleVault.sol
-          
-          # Verify fix
-          grep "event Deposit" src/SimpleVault.sol
+          sed -i 's/event Deposited/event Deposit/g' demo/evm-vault/src/SimpleVault.sol
+          grep "event Deposit" demo/evm-vault/src/SimpleVault.sol
 
       # 3) Test should PASS
       - name: Test (expected pass)
-        working-directory: demo/evm-vault
         run: |
-          cd ../..
+          cd $GITHUB_WORKSPACE
           node runner/src/index.js test --chain evm
           
           # Verify report shows success
@@ -81,9 +83,22 @@ jobs:
 
       # 4) Deploy on anvil (local)
       - name: Deploy (anvil)
-        working-directory: demo/evm-vault
         run: |
-          cd ../..
+          cd $GITHUB_WORKSPACE
+          node runner/src/index.js deploy --network anvil --chain evm
+          
+          # Verify deploy report
+          echo "=== Deploy Report ==="
+          cat reports/deploy.evm.anvil.json
+          
+          # Assert has address
+          jq -e '.address and (.address|type=="string") and (.address|length > 0)' reports/deploy.evm.anvil.json
+          jq -e '.ok == true' reports/test.evm.forge.json
+
+      # 4) Deploy on anvil (local)
+      - name: Deploy (anvil)
+        run: |
+          cd $GITHUB_WORKSPACE
           node runner/src/index.js deploy --network anvil --chain evm
           
           # Verify deploy report
