@@ -1,0 +1,1 @@
+const a=typeof navigator<"u"?navigator.platform.toLowerCase().includes("mac"):!1,n=typeof navigator<"u"?navigator.platform.toLowerCase().includes("win"):!1,i=typeof navigator<"u"?navigator.platform.toLowerCase().includes("linux"):!1;function o(){return globalThis.innerWidth<640}export{a,n as b,i as c,o as i};
