@@ -1,25 +1,21 @@
 import { atom } from 'nanostores'
 
-// UI state for fuzz testing in the IDE
-export type Counterexample = {
-  id?: string
-  contract?: string
-  input?: string
-  expected?: string
-  actual?: string
-}
-
-export type FuzzResultState = {
+export type FuzzReport = {
   totalRuns: number
-  completedRuns: number
+  doneRuns: number
   failures: number
-  counterexamples: Counterexample[]
+  counterexamples: any[]
+  startedAt?: string
+  finishedAt?: string
+  status?: string
 }
 
-export const fuzzStatus = atom<'idle' | 'running' | 'done' | 'error'>('idle')
-export const fuzzResults = atom<FuzzResultState>({
+// Fuzz running status: idle | running | done | error
+export const fuzzStatus = atom<string>('idle')
+
+export const fuzzResults = atom<FuzzReport>({
   totalRuns: 0,
-  completedRuns: 0,
+  doneRuns: 0,
   failures: 0,
   counterexamples: [],
 })
