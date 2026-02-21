@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 // Path from this file: web-ui/app/components/workbench/LiveReloadToggle.tsx
 // to livereload.ts: ../../lib/stores/livereload
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { liveReloadEnabled, liveReloadStatus, lastDeployAddress, deployTo } = (() => {
+const { liveReloadEnabled, liveReloadStatus, lastDeployAddress, deployTo, startWatching } = (() => {
   try {
     // @ts-ignore
     const mods = require('../../lib/stores/livereload')
@@ -13,9 +13,10 @@ const { liveReloadEnabled, liveReloadStatus, lastDeployAddress, deployTo } = (()
       liveReloadStatus: mods.liveReloadStatus,
       lastDeployAddress: mods.lastDeployAddress,
       deployTo: mods.deployTo,
+      startWatching: mods.startWatching,
     }
   } catch {
-    return { liveReloadEnabled: null, liveReloadStatus: null, lastDeployAddress: null, deployTo: null }
+    return { liveReloadEnabled: null, liveReloadStatus: null, lastDeployAddress: null, deployTo: null, startWatching: null }
   }
 })()
 
@@ -71,6 +72,14 @@ const LiveReloadToggle: React.FC = () => {
     }
   }, [lastDeployAddress])
 
+  // Log newly deployed addresses for developer visibility
+  useEffect(() => {
+    if (addr) {
+      // eslint-disable-next-line no-console
+      console.log('[LiveReload] Deployed to local address:', addr)
+    }
+  }, [addr])
+
   const toggle = () => {
     if (!isLocalChainRunning || !isCompilerAvailable || !liveReloadEnabled?.set) {
       // Do nothing if preconditions are not met
@@ -80,6 +89,23 @@ const LiveReloadToggle: React.FC = () => {
     const next = !enabled
     if (liveReloadEnabled?.set) liveReloadEnabled.set(next)
     setEnabled(next)
+    // If enabled, start watching for file changes and trigger redeploy on changes
+    if (next && typeof (startWatching as any) === 'function') {
+      try {
+        // Start watching common source directories for changes
+        (startWatching as any)(['./contracts', './src'], () => {
+          const newAddr = addr || ('0x' + Math.random().toString(16).slice(2, 10))
+          if (typeof deployTo === 'function') deployTo(newAddr)
+        }, 1000)
+      } catch {
+        // ignore watcher failures in environments without filesystem access
+      }
+    }
+    // Trigger an initial deploy to establish a local address as soon as enabling
+    if (typeof deployTo === 'function') {
+      const nextAddr = addr || '0x' + Math.random().toString(16).slice(2, 10)
+      deployTo(nextAddr)
+    }
   }
 
   // Disable if preconditions not met
