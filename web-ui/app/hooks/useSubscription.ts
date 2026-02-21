@@ -24,26 +24,27 @@ import {
  * - isUpgradeNeeded(targetPlan): whether upgrading to targetPlan is an upgrade from current plan
  */
 export function useSubscription(userId: string, currentProjects: number) {
-  const plan = getUserPlan(userId);
-  const canCreate = canCreateProject(userId, currentProjects);
+  // State object representing the user's subscription
+  const state = getUserPlan(userId)
+  const canCreate = canCreateProject(userId, currentProjects)
 
   const upgrade = (targetPlan: Plan) => {
-    upgradeUser(userId, targetPlan);
-  };
+    upgradeUser(userId, targetPlan)
+  }
 
   const createCheckout = (targetPlan: Plan) => {
-    return createCheckoutSession(userId, targetPlan);
-  };
+    return createCheckoutSession(userId, targetPlan)
+  }
 
-  const isUpgrade = (targetPlan: Plan) => isUpgradeNeeded(plan, targetPlan);
+  const isUpgrade = (targetPlan: Plan) => isUpgradeNeeded(state.plan, targetPlan)
 
   return {
-    plan,
+    state,
     canCreate,
     upgrade,
     createCheckout,
     isUpgrade,
-  };
+  }
 }
 
 export type { Plan };
