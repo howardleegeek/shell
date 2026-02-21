@@ -1,0 +1,44 @@
+{
+  // Define contracts to deploy. Each entry may be deployed by a different tool per network.
+  "contracts": [
+    {
+      "name": "MyToken",
+      // Path to the forge deploy script or the hardhat deploy script depending on tool
+      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy", 
+      // Optional: arguments for constructor in string form
+      "constructor_args": [] 
+    }
+  ],
+  // Networks to deploy to. You can select multiple networks for parallel deployment.
+  "networks": [
+    {
+      "name": "Sepolia",
+      "tool": "forge",
+      "rpc": "https://sepolia.infura.io/v3/YOUR-INFURA-PROJECT-ID",
+      "chain_id": 11155111,
+      "constructor_args": [],
+      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy",
+      "gas_price_gwei": 1
+    },
+    {
+      "name": "Base Sepolia",
+      "tool": "forge",
+      "rpc": "https://goerli.base.org/v3/YOUR-BASE-API-KEY",
+      "chain_id": 84531,
+      "constructor_args": [],
+      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy",
+      "gas_price_gwei": 1
+    },
+    {
+      "name": "Arbitrum Sepolia",
+      "tool": "forge",
+      "rpc": "https://arb-sepolia.infura.io/v3/YOUR-INFURA-PROJECT-ID",
+      "chain_id": 1604,
+      "constructor_args": [],
+      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy",
+      "gas_price_gwei": 1
+    }
+  ],
+  // Parallel deployment options
+  "parallel": true
+}
