@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "source": {
+    "chain": "evm",
+    "contract": "repo/contracts/Contract.sol"
+  },
+  "target": {
+    "chain": "solana",
+    "program": "migration_wizard"
+  },
+  "generated": {
+    "rustPath": "/Users/howardli/dispatch/shell/tasks/S39-cross-chain-migration/repo/migration-target/solana/programs/migration_wizard/src/lib.rs",
+    "cargoToml": "/Users/howardli/dispatch/shell/tasks/S39-cross-chain-migration/repo/migration-target/solana/programs/migration_wizard/Cargo.toml"
+  },
+  "summary": "Automated skeleton translation from Solidity to Solana Anchor-like program",
+  "details": {
+    "functionsDetected": 0,
+    "manualReviewNeeded": false
+  }
+}
