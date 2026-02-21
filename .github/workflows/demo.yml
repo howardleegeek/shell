@@ -47,13 +47,20 @@ jobs:
         run: |
           cd demo/evm-vault
           forge install openzeppelin/openzeppelin-contracts foundry-rs/forge-std --no-commit || true
-          cd ..
-          forge test || true
+          # Run test - should FAIL due to event mismatch
+          set +e
+          forge test
+          test_result=$?
+          set -e
           
-          # Write report manually
-          mkdir -p reports
-          echo '{"ok": false, "chain": "evm", "runner": "forge", "command": "forge test", "exitCode": 1, "summary": "Test failed (expected)"}' > reports/test.evm.forge.json
-          jq -e '.ok == false' reports/test.evm.forge.json
+          # Write report based on actual result
+          mkdir -p ../reports
+          if [ $test_result -eq 0 ]; then
+            echo '{"ok": true, "chain": "evm", "runner": "forge", "command": "forge test", "exitCode": 0, "summary": "Test passed (UNEXPECTED - should fail)"}' > ../reports/test.evm.forge.json
+          else
+            echo '{"ok": false, "chain": "evm", "runner": "forge", "command": "forge test", "exitCode": 1, "summary": "Test failed (expected)"}' > ../reports/test.evm.forge.json
+          fi
+          jq -e '.ok == false' ../reports/test.evm.forge.json
 
       # 2) Apply patch: fix event name (Deposited -> Deposit)
       - name: Apply patch
@@ -68,6 +75,7 @@ jobs:
           forge test
           cd ..
           echo '{"ok": true, "chain": "evm", "runner": "forge", "command": "forge test", "exitCode": 0, "summary": "Test passed"}' > reports/test.evm.forge.json
+          cat reports/test.evm.forge.json
           jq -e '.ok == true' reports/test.evm.forge.json
 
       # 4) Deploy on anvil (local)
