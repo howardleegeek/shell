@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 // Re-export AbiFunction for tests that import from this module
 import type { AbiFunction as AbiFunctionType } from '../../../lib/calldata';
 export type AbiFunction = AbiFunctionType;
-export { decodeCalldata, encodeCalldata } from '../../../lib/calldata';
 import { decodeCalldata, encodeCalldata, lookup4byte } from '../../../lib/calldata';
 
 // Sample ABI used for decoding/encoding. In the real app this will be
