@@ -1,0 +1,24 @@
+:root {
+  --bg: #0d1117;
+  --fg: #c9d1d9;
+  --muted: #8b949e;
+}
+
+html, body, #root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0b0f14 0%, #11131a 60%, #0b0f14 100%);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Inter, Roboto, Arial;
+}
+
+.cyber-title {
+  color: #58fce5;
+  text-shadow: 0 0 6px rgba(88,252,229,0.8);
+}
+
+.container {
+  padding: 16px;
+}
