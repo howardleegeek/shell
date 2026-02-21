@@ -23,6 +23,11 @@ export default function EnsResolver(): JSX.Element {
   const provider: any = useMemo(() => {
     try {
       const w = typeof window !== 'undefined' ? (window as any) : null
+      // Test injection: allow tests to provide a mock provider for deterministic behavior
+      if (w?.__ENS_RESOLVER_TEST_PROVIDER__) {
+        // @ts-ignore
+        return w.__ENS_RESOLVER_TEST_PROVIDER__
+      }
       if (w?.ethereum) {
         // @ts-ignore
         const { ethers } = require('ethers')
