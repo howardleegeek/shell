@@ -9,6 +9,7 @@ import { classNames } from '~/utils/classNames';
 import { Terminal, type TerminalRef } from './Terminal';
 import { TerminalManager } from './TerminalManager';
 import { createScopedLogger } from '~/utils/logger';
+import { TestResultsPanel } from '~/components/workbench/TestResultsPanel';
 
 const logger = createScopedLogger('Terminal');
 
@@ -215,6 +216,7 @@ export const TerminalTabs = memo(() => {
               onClick={() => workbenchStore.toggleTerminal(false)}
             />
           </div>
+          <TestResultsPanel />
           {Array.from({ length: terminalCount + 1 }, (_, index) => {
             const isActive = activeTerminal === index;
 

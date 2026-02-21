@@ -1,16 +1,26 @@
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { Compartment, type Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { vscodeDark, vscodeLight } from '@uiw/codemirror-theme-vscode';
+import { tags } from '@lezer/highlight';
 import type { Theme } from '~/types/theme.js';
 import type { EditorSettings } from './CodeMirrorEditor.js';
 
 export const darkTheme = EditorView.theme({}, { dark: true });
 export const themeSelection = new Compartment();
 
+const cyberpunkHighlightStyle = HighlightStyle.define([
+  { tag: [tags.keyword, tags.controlKeyword, tags.operatorKeyword], color: '#b84dff' },
+  { tag: [tags.string, tags.special(tags.string)], color: '#00ff88' },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], color: '#666666' },
+  { tag: [tags.typeName, tags.className, tags.namespace], color: '#4dc9f6' },
+  { tag: [tags.number, tags.integer, tags.float, tags.bool], color: '#ffaa00' },
+]);
+
 export function getTheme(theme: Theme, settings: EditorSettings = {}): Extension {
   return [
     getEditorTheme(settings),
-    theme === 'dark' ? themeSelection.of([getDarkTheme()]) : themeSelection.of([getLightTheme()]),
+    theme === 'dark' ? themeSelection.of(getDarkTheme()) : themeSelection.of(getLightTheme()),
   ];
 }
 
@@ -184,9 +194,9 @@ function getEditorTheme(settings: EditorSettings) {
 }
 
 function getLightTheme() {
-  return vscodeLight;
+  return [vscodeLight, syntaxHighlighting(cyberpunkHighlightStyle)];
 }
 
 function getDarkTheme() {
-  return vscodeDark;
+  return [vscodeDark, syntaxHighlighting(cyberpunkHighlightStyle)];
 }
