@@ -8,7 +8,11 @@ interface Report {
   summary: string;
   chain?: string;
   runner?: string;
+  network?: string;
+  address?: string;
+  txHash?: string;
   finishedAt?: string;
+  command?: string;
 }
 
 function App() {
@@ -65,10 +69,17 @@ function App() {
   };
 
   const loadReports = async () => {
-    // This would read from the reports directory
-    // For now, placeholder
+    // In production, this would read from reports/*.json via Tauri backend
+    // For demo, show sample data
     setReports([
-      { ok: true, summary: 'Test passed (10 passing)', chain: 'evm', runner: 'forge', finishedAt: new Date().toISOString() },
+      { 
+        ok: true, 
+        summary: 'Test passed (4 passing, 1 failing)', 
+        chain: 'evm', 
+        runner: 'forge', 
+        finishedAt: new Date().toISOString(),
+        command: 'forge test'
+      },
     ]);
   };
 
@@ -115,6 +126,7 @@ function App() {
                     </>
                   ) : (
                     <>
+                      <option value="anvil">Anvil (Local)</option>
                       <option value="sepolia">Sepolia</option>
                       <option value="goerli">Goerli</option>
                       <option value="mainnet">Mainnet</option>
@@ -155,9 +167,9 @@ function App() {
           </div>
         ) : (
           <div className="reports-view">
-            <h2>Test Reports</h2>
+            <h2>Reports</h2>
             {reports.length === 0 ? (
-              <p className="empty">No reports yet. Run a test first.</p>
+              <p className="empty">No reports yet. Run an action first.</p>
             ) : (
               <div className="reports-list">
                 {reports.map((report, i) => (
@@ -166,9 +178,27 @@ function App() {
                     <div className="report-info">
                       <span className="summary">{report.summary}</span>
                       <span className="meta">
-                        {report.chain} / {report.runner} 
+                        {report.chain}/{report.runner}/{report.network || 'default'}
                         {report.finishedAt && ` • ${new Date(report.finishedAt).toLocaleTimeString()}`}
                       </span>
+                      {report.address && (
+                        <div className="deploy-info">
+                          <span className="label">Address: </span>
+                          <code className="address">{report.address}</code>
+                          <button 
+                            className="copy-btn"
+                            onClick={() => navigator.clipboard.writeText(report.address || '')}
+                          >
+                            📋
+                          </button>
+                        </div>
+                      )}
+                      {report.txHash && (
+                        <div className="deploy-info">
+                          <span className="label">Tx: </span>
+                          <code className="tx">{report.txHash.substring(0, 18)}...</code>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

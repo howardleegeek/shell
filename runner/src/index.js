@@ -241,7 +241,7 @@ const actionBuild = async (options) => {
 const actionDeploy = async (options) => {
   const chain = options.chain || detectProject();
   const runner = options.runner || (chain === 'solana' ? 'anchor' : 'forge');
-  const network = options.network || (chain === 'solana' ? 'devnet' : 'sepolia');
+  let network = options.network || (chain === 'solana' ? 'devnet' : 'sepolia');
   const projectPath = options.project || cwd();
   
   log(`Running deploy: chain=${chain}, network=${network}`, 'info');
@@ -250,6 +250,22 @@ const actionDeploy = async (options) => {
   let result;
   let address = '';
   let txHash = '';
+  let rpcUrl = '';
+  
+  // Handle anvil (local dev network)
+  if (network === 'anvil') {
+    log('Starting anvil...', 'info');
+    // Start anvil in background (fire and forget for demo)
+    spawn('anvil', ['--host', '127.0.0.1', '--port', '8545'], { 
+      cwd: projectPath,
+      detached: true,
+      stdio: 'ignore'
+    });
+    // Wait for anvil to start
+    await new Promise(r => setTimeout(r, 3000));
+    rpcUrl = 'http://127.0.0.1:8545';
+    network = 'local'; // For filename
+  }
   
   if (chain === 'solana' && runner === 'anchor') {
     result = await runCommand('anchor', ['deploy', '--provider.cluster', network], projectPath);
@@ -257,8 +273,10 @@ const actionDeploy = async (options) => {
     const match = result.stdout.match(/ProgramId:\s*([\w]{32,44})/);
     if (match) address = match[1];
   } else if (chain === 'evm' && runner === 'forge') {
-    // For forge deploy, would need contract name - using placeholder
-    result = await runCommand('forge', ['create', '--network', network, 'src/Contract.sol:Contract'], projectPath);
+    // Try to deploy using DEFAULT_CONTRACT or find .sol file
+    // For demo, try SimpleVault
+    const deployCmd = `forge create --rpc-url ${rpcUrl || network} --broadcast src/SimpleVault.sol:SimpleVault`;
+    result = await runCommand(deployCmd, [], projectPath);
     const addrMatch = result.stdout.match(/Deployed to:\s*(0x[\w]{40})/);
     const txMatch = result.stdout.match(/Transaction hash:\s*(0x[\w]{64})/);
     if (addrMatch) address = addrMatch[1];
@@ -273,18 +291,19 @@ const actionDeploy = async (options) => {
   const report = {
     ok: result.exitCode === 0,
     chain,
-    network,
+    network: options.network || network,
     runner,
     address,
     txHash,
+    rpcUrl: rpcUrl || `https://rpc.${options.network || 'sepolia'}.org`,
     startedAt,
     finishedAt,
     summary: result.exitCode === 0 
-      ? `✅ Deployed to ${network}: ${address}` 
+      ? `✅ Deployed to ${options.network || 'sepolia'}: ${address}` 
       : `❌ Deploy failed`
   };
   
-  const filename = `deploy.${chain}.${network}.json`;
+  const filename = `deploy.${chain}.${options.network || 'sepolia'}.json`;
   writeReport(filename, report);
   
   return report;

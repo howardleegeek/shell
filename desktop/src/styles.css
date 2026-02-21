@@ -211,3 +211,31 @@
   font-size: 12px;
   color: #8b949e;
 }
+
+.report-info .deploy-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.report-info .deploy-info .label {
+  color: #8b949e;
+}
+
+.report-info .deploy-info .address {
+  background: #0d1117;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.report-info .copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 12px;
+}
