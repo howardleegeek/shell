@@ -1,15 +1,25 @@
 {
-  "ok": true,
+  "ok": false,
   "chain": "evm",
   "runner": "forge",
-  "startedAt": "2026-02-21T06:31:44.508Z",
-  "finishedAt": "2026-02-21T06:31:44.854Z",
+  "startedAt": "2026-02-21T07:13:05.606Z",
+  "finishedAt": "2026-02-21T07:13:05.922Z",
   "command": "forge test",
-  "exitCode": 0,
-  "summary": "✅ Tests passed (2 passing)",
+  "exitCode": 1,
+  "summary": "❌ Tests failed (1 failing)",
   "details": {
-    "passed": 2,
-    "failed": 0,
-    "errors": []
+    "passed": 1,
+    "failed": 1,
+    "errors": [],
+    "failures": [
+      {
+        "reason": "Error != expected error: Must send ETH != Wrong message",
+        "test": "testDepositZeroFails()"
+      },
+      {
+        "reason": "Error != expected error: Must send ETH != Wrong message",
+        "test": "testDepositZeroFails()"
+      }
+    ]
   }
 }

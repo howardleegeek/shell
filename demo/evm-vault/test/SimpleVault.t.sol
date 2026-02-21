@@ -19,7 +19,7 @@ contract SimpleVaultTest is Test {
 
     function testDepositZeroFails() public {
         vm.deal(address(this), 10 ether);
-        vm.expectRevert("Must send ETH");
+        vm.expectRevert("Wrong message");
         vault.deposit{value: 0}();
     }
 }

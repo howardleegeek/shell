@@ -63,13 +63,13 @@ jobs:
           cd opencrabs
           cargo build --release
           # Make sure web3 tools are compiled
-          cargo build --release 2>&1 | grep -E "(web3_test|web3_report|web3_deploy)" || echo "Building web3 tools..."
+          cargo build --release 2>&1 | grep -E "(web3_test|web3_report|web3_deploy|web3_auto_repair)" || echo "Building web3 tools..."
 
       - name: Verify Web3 tools exist in binary
         run: |
           cd opencrabs
           # Check the binary has web3 tool symbols
-          strings target/release/opencrabs | grep -E "web3_" | head -5
+          strings target/release/opencrabs | grep -E "web3_" | head -10
 
       - name: Show OpenCrabs version
         run: |

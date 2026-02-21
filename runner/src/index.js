@@ -167,6 +167,16 @@ const actionTest = async (options) => {
   const passed = (result.stdout.match(/(\d+)\s+passing/) || result.stdout.match(/(\d+)\s+passed/) || [])[1] || '0';
   const failed = (result.stdout.match(/(\d+)\s+failing/) || result.stdout.match(/(\d+)\s+failed/) || [])[1] || '0';
   
+  // Extract failure details
+  const failures = [];
+  const failureMatches = result.stdout.matchAll(/\[FAIL:([^\]]+)\]\s+(\S+)/g);
+  for (const match of failureMatches) {
+    failures.push({
+      reason: match[1].trim(),
+      test: match[2].trim()
+    });
+  }
+  
   /** @type {TestReport} */
   const report = {
     ok: result.exitCode === 0,
@@ -182,7 +192,8 @@ const actionTest = async (options) => {
     details: {
       passed: parseInt(passed),
       failed: parseInt(failed),
-      errors: result.stderr.split('\n').filter(l => l.includes('Error'))
+      errors: result.stderr.split('\n').filter(l => l.includes('Error')),
+      failures
     }
   };
   
