@@ -1,6 +1,5 @@
-// AI commit message generator
-// This module encapsulates the heuristic used to generate an AI-assisted
-// commit message based on the current status of staged changes.
+// Import from gitActions API facade
+import { aiCommitMessage } from './gitActions';
 
 import { status } from './gitMock';
 

@@ -7,7 +7,8 @@ type DiffViewerProps = {
   language?: string;
 };
 
-// Lightweight diff viewer for IDE integration tests
+// Import from gitActions API facade
+import { getDiff } from './gitActions';
 const DiffViewer: React.FC<DiffViewerProps> = ({ beforeCode, afterCode, filename, language }) => {
   return (
     <div className="git-diff-viewer" data-filename={filename}>
