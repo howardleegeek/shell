@@ -121,6 +121,9 @@ async function fetchBalance(address: string): Promise<string> {
 }
 
 export async function generateLocalExplorerReport(directory: string, maxTxs: number = 5): Promise<LocalExplorerReport> {
+  if (typeof directory !== "string") {
+    return { ok: false, chain: "evm", startedAt: nowIso(), finishedAt: nowIso(), reportsDir: "", txs: [], accounts: [] };
+  }
   const startedAt = nowIso();
   const reportsDir = path.join(directory, "reports");
   ensureDir(reportsDir);
