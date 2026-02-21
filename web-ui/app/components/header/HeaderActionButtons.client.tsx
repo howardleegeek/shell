@@ -4,6 +4,8 @@ import { workbenchStore } from "~/lib/stores/workbench";
 import { DeployButton } from "~/components/deploy/DeployButton";
 import { LocalChainButton } from "~/components/workbench/LocalChainButton";
 import { TestButton } from "~/components/workbench/TestButton";
+import { BuildButton } from "~/components/workbench/BuildButton";
+import { buildRunStore } from "~/lib/stores/build-runner";
 
 interface HeaderActionButtonsProps {
   chatStarted: boolean;
@@ -14,9 +16,18 @@ export function HeaderActionButtons({
 }: HeaderActionButtonsProps) {
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
+  const buildRun = useStore(buildRunStore);
   const activePreview = previews[activePreviewIndex];
 
   const shouldShowButtons = activePreview;
+  const buildStatusLabel =
+    buildRun.status === "building"
+      ? "Building..."
+      : buildRun.status === "success"
+        ? "Build ✓"
+        : buildRun.status === "failed"
+          ? "Build ✗"
+          : "Build idle";
 
   return (
     <div className="flex items-center gap-1">
@@ -25,6 +36,16 @@ export function HeaderActionButtons({
 
       {/* Test Button */}
       <TestButton />
+
+      {/* Build Button */}
+      <BuildButton />
+
+      <div
+        className="rounded-md border border-bolt-elements-borderColor px-2.5 py-1 text-xs text-bolt-elements-textSecondary"
+        title={buildRun.error ?? "Build status"}
+      >
+        {buildStatusLabel}
+      </div>
 
       {/* Deploy Button */}
       {shouldShowButtons && <DeployButton />}
