@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: oysterlabs/shell
+          repository: howardleegeek/shell
           path: shell
 
       - name: Install Foundry
@@ -39,7 +39,8 @@ jobs:
           # Create shell-run in PATH
           mkdir -p $HOME/bin
           echo '#!/bin/bash' > $HOME/bin/shell-run
-          echo 'cd ~/work/oyster/oyster/shell && node runner/src/index.js "$@"' >> $HOME/bin/shell-run
+          # GitHub Actions checkout path: /home/runner/work/shell/shell
+          echo 'cd $GITHUB_WORKSPACE/shell && node runner/src/index.js "$@"' >> $HOME/bin/shell-run
           chmod +x $HOME/bin/shell-run
           echo "$HOME/bin" >> $GITHUB_PATH
           
