@@ -77,7 +77,7 @@ export const TemplateGallery: React.FC<Props> = ({ templates, onUse }) => {
 
       <div style={gridStyle}>
         {filtered.map(t => (
-          <TemplateCard key={t.id} t={t} onUse={onUse ?? (() => {})} />
+          <TemplateCard key={t.id} t={t} onUse={onUse ?? ((t: any) => {})} />
         ))}
       </div>
 

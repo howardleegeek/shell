@@ -8,23 +8,33 @@ type TemplateInfo = {
   icon: string
   promptTemplate: string
   category: 'SVM' | 'EVM'
+  // Optional field used by tests/consumers to explicitly mark the channel
+  // (SVM or EVM). Existing data may populate this as undefined; the code
+  // handles that with a fallback elsewhere.
+  chain?: string
 }
 
 type Props = {
   t: TemplateInfo
+  onUse?: (t: TemplateInfo) => void
 }
 
-export const TemplateCard: React.FC<Props> = ({ t }) => {
+export const TemplateCard: React.FC<Props> = ({ t, onUse }) => {
   const navigate = useNavigate()
   const [hover, setHover] = useState(false)
   const handleUse = () => {
-    // Navigate to AI Chat and prefill the prompt for this template
+    if (onUse) {
+      onUse(t)
+      return
+    }
+    // Fallback: open AI chat with prefilled prompt
     const encoded = encodeURIComponent(t.promptTemplate)
     navigate(`/ai-chat?prompt=${encoded}`)
   }
 
   return (
     <div
+      data-testid={`template-${t.id}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
