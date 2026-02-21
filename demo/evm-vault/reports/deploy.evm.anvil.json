@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "chain": "evm",
+  "network": "anvil",
+  "runner": "forge",
+  "address": "",
+  "txHash": "",
+  "rpcUrl": "http://127.0.0.1:8545",
+  "startedAt": "2026-02-21T07:28:08.091Z",
+  "finishedAt": "2026-02-21T07:28:11.268Z",
+  "summary": "❌ Deploy failed"
+}
