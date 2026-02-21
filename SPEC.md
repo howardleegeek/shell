@@ -70,6 +70,52 @@ OpenCode 核心 (不动)
 - `evm-governance` - DAO 治理
 - `evm-defi` - 基础 DEX
 
+### D. MCP Integration
+
+通过 MCP (Model Context Protocol) 与链上交互：
+
+#### Solana
+使用 [solana-web3js-mcp-server](https://github.com/FrankGenGo/solana-web3js-mcp-server)：
+
+| Tool | 功能 |
+|------|------|
+| `wallet.getOrCreate` | 创建/获取钱包 |
+| `solana.requestAirdrop` | 请求测试币 |
+| `anchor.test` | 运行 Anchor 测试 |
+| `anchor.deploy` | 部署到 Devnet |
+
+#### EVM
+使用 [web3-mcp-hub](https://github.com/rudazy/web3-mcp-hub)：
+
+| Tool | 功能 |
+|------|------|
+| `eth_getBalance` | 查询余额 |
+| `eth_call` | 读合约 |
+| `eth_sendTransaction` | 发送交易 |
+| `eth_deployContract` | 部署合约 |
+
+### E. Unified Reports Schema
+
+所有测试/部署输出统一到 `reports/` 目录：
+
+```json
+// reports/test.evm.forge.json
+{
+  "ok": true,
+  "chain": "evm",
+  "runner": "forge",
+  "startedAt": "2024-01-01T00:00:00Z",
+  "finishedAt": "2024-01-01T00:00:05Z",
+  "command": "forge test",
+  "exitCode": 0,
+  "summary": "✅ tests passed",
+  "details": {
+    "passed": 10,
+    "failed": 0
+  }
+}
+```
+
 ## Features
 
 ### Phase 1 (MVP) - 已完成
