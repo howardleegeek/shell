@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from '@remix-run/react'
 import registry from '../../templates/registry.json'
 
 type TemplateInfo = {
@@ -42,6 +43,7 @@ function loadTemplates(): TemplateInfo[] {
 type Props = {}
 
 export const TemplatesGallery: React.FC<Props> = () => {
+  const navigate = useNavigate()
   const templates = useMemo(loadTemplates, [])
   const [tab, setTab] = useState<'SVM' | 'EVM'>('EVM')
   const [q, setQ] = useState('')
@@ -59,7 +61,7 @@ export const TemplatesGallery: React.FC<Props> = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ fontSize: 20, fontWeight: 600 }}>Template Gallery</div>
         <button
-          onClick={() => console.log('start-from-scratch')}
+          onClick={() => navigate('/ai-chat')}
           style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #3f3f8f', background: '#111', color: '#7df2ff' }}
         >
           Start from scratch

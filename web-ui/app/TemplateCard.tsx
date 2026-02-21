@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { useNavigate } from '@remix-run/react'
 
 type TemplateInfo = {
   id: string
@@ -14,13 +15,18 @@ type Props = {
 }
 
 export const TemplateCard: React.FC<Props> = ({ t }) => {
+  const navigate = useNavigate()
+  const [hover, setHover] = useState(false)
   const handleUse = () => {
-    // Hook this up to AI chat flow in the real app
-    console.log('use-template', t.id, t.name)
+    // Navigate to AI Chat and prefill the prompt for this template
+    const encoded = encodeURIComponent(t.promptTemplate)
+    navigate(`/ai-chat?prompt=${encoded}`)
   }
 
   return (
     <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         border: '2px solid #2a2a68',
         borderRadius: 12,
@@ -30,6 +36,10 @@ export const TemplateCard: React.FC<Props> = ({ t }) => {
         flexDirection: 'column',
         gap: 8,
         minHeight: 150,
+        transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+        // Cyberpunk glow on hover
+        boxShadow: hover ? '0 0 14px rgba(0, 255, 255, 0.8)' : 'none',
+        borderColor: hover ? '#3f3f8f' : '#2a2a68',
       }}
     >
       <div style={{ fontSize: 20 }}>{t.icon} {t.name}</div>

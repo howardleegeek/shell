@@ -16,6 +16,13 @@ describe('Template Registry', () => {
     expect(count).toBe(8)
   })
 
+  it('should contain 16 templates in total (8 EVM + 8 SVM)', () => {
+    const evm = (registry as any).templates?.evm || {}
+    const svm = (registry as any).templates?.solana || {}
+    const total = Object.values(evm).filter(v => typeof v === 'object').length + Object.values(svm).filter(v => typeof v === 'object').length
+    expect(total).toBe(16)
+  })
+
   it('each template should have a promptTemplate', () => {
     const evm = Object.values(((registry as any).templates?.evm) || {}) as any[]
     const first = evm[0]
