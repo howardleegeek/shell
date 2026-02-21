@@ -4,11 +4,12 @@ const {
   parseSemgrepOutput,
   parseClippyOutput,
   runAnchorSecurityLints,
+  sortFindings,
   summarizeFindings,
 } = require('../app/lib/web3/audit-runner');
 
 function testSlitherParser() {
-  const input = JSON.stringify({
+  const report = JSON.stringify({
     results: {
       detectors: [
         {
@@ -28,12 +29,25 @@ function testSlitherParser() {
       ],
     },
   });
+  const input = `slither execution logs\n${report}`;
 
   const findings = parseSlitherOutput(input);
   assert.equal(findings.length, 1);
   assert.equal(findings[0].severity, 'high');
   assert.equal(findings[0].file, 'contracts/Vault.sol');
   assert.equal(findings[0].line, 45);
+}
+
+function testSortOrder() {
+  const findings = sortFindings([
+    { severity: 'medium', file: 'z.sol', line: 5 },
+    { severity: 'critical', file: 'b.sol', line: 7 },
+    { severity: 'high', file: 'a.sol', line: 9 },
+  ]);
+
+  assert.equal(findings[0].severity, 'critical');
+  assert.equal(findings[1].severity, 'high');
+  assert.equal(findings[2].severity, 'medium');
 }
 
 function testSemgrepParser() {
@@ -111,6 +125,7 @@ function run() {
   testSemgrepParser();
   testClippyParser();
   testAnchorLints();
+  testSortOrder();
   console.log('audit-runner tests passed');
 }
 

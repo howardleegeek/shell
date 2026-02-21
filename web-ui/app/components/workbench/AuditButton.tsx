@@ -266,7 +266,7 @@ export function AuditButton() {
       if (chainType === 'evm') {
         const slitherExecution = await executeAuditCommand(
           `audit-slither-${Date.now()}`,
-          "slither . --json reports/audit.evm.slither.json >/dev/null 2>&1 || true; cat reports/audit.evm.slither.json 2>/dev/null || echo '{\"results\":{\"detectors\":[]}}'",
+          "if command -v slither >/dev/null 2>&1; then slither . --json reports/audit.evm.slither.json >/dev/null 2>&1 || true; else echo '{\"results\":{\"detectors\":[]}}' > reports/audit.evm.slither.json; fi; if [ ! -s reports/audit.evm.slither.json ]; then echo '{\"results\":{\"detectors\":[]}}' > reports/audit.evm.slither.json; fi; cat reports/audit.evm.slither.json",
         );
 
         const semgrepExecution = await executeAuditCommand(
