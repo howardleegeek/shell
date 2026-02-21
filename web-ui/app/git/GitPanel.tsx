@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getStatus, stage, unstage, commitWithAI } from './gitActions';
+// Use the new git-operations API facade
+import { getStatus, stage, unstage, commitWithAI } from '../lib/git/git-operations';
 
 type FileItem = { path: string; status: string };
 
