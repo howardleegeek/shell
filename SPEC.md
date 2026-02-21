@@ -29,6 +29,47 @@ OpenCode 核心 (不动)
             └── templates/            # 合约模板注册表
 ```
 
+## Core Principle: Report-Driven Workflow (强制报告驱动)
+
+**Shell 不是普通 AI CLI。所有执行必须落地 JSON 报告。**
+
+### Workflow Mandate
+
+```
+任何 Shell action 必须遵循：
+1. 执行命令
+2. 解析输出
+3. 写入 reports/*.json (按 schema)
+4. 读取报告做决策
+5. 继续或终止
+```
+
+### Agent Enforcement
+
+Agent 不能 trust CLI 输出。必须：
+
+- ✅ 读取 `reports/test.*.json` 判断是否通过
+- ✅ 读取 `reports/audit.*.json` 获取漏洞列表
+- ✅ 读取 `reports/deploy.*.json` 获取部署地址
+- ❌ 不能直接 trust stdout/stderr
+
+### Decision Logic
+
+```typescript
+// Agent 必须执行的决策树
+if (report.ok === false) {
+  // 分析失败原因
+  const failures = categorizeFailures(report.details.errors);
+  // 生成修复 patch
+  await generatePatch(failures);
+  // 重新测试
+  await shell.run('--action=test');
+  // 再次读取报告
+} else if (report.ok === true) {
+  // 继续下一步
+}
+```
+
 ## Capability Layers
 
 ### A. Web3 Tooling Layer (Plugins)
@@ -134,6 +175,32 @@ OpenCode 核心 (不动)
 | `project.test` | 运行测试 | `reports/test.*.json` |
 | `project.deploy_testnet` | 部署到测试网 | `reports/deploy.*.json` |
 | `report.bundle` | 汇总报告 | `reports/bundle.json` |
+
+### F. Unified Runner
+
+所有 actions 通过单一入口 `shell-run` 执行：
+
+```bash
+# 检测项目类型
+shell-run detect
+
+# 运行测试
+shell-run test --chain evm --runner foundry
+
+# 构建
+shell-run build --chain solana --runner anchor
+
+# 部署
+shell-run deploy --network sepolia
+
+# 审计
+shell-run audit --chain evm
+
+# 查看报告
+shell-run report --json
+```
+
+**输出**: 所有命令都写入 `reports/*.json`，按统一 schema 格式。
 
 ### E. Unified Reports Schema
 

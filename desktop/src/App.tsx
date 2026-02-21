@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
+type View = 'project' | 'reports';
+
+interface Report {
+  ok: boolean;
+  summary: string;
+  chain?: string;
+  runner?: string;
+  finishedAt?: string;
+}
+
 function App() {
+  const [activeView, setActiveView] = useState<View>('project');
   const [serverRunning, setServerRunning] = useState(false);
-  const [output, setOutput] = useState<string[]>([]);
-  const [command, setCommand] = useState('');
+  const [chain, setChain] = useState<string>('evm');
+  const [network, setNetwork] = useState<string>('sepolia');
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     checkServerStatus();
@@ -24,44 +37,39 @@ function App() {
       if (serverRunning) {
         await invoke('stop_opencode_server');
         setServerRunning(false);
-        setOutput(prev => [...prev, 'Server stopped']);
       } else {
-        const result = await invoke<string>('start_opencode_server', { port: 4096 });
+        await invoke<string>('start_opencode_server', { port: 4096 });
         setServerRunning(true);
-        setOutput(prev => [...prev, result]);
       }
     } catch (e) {
-      setOutput(prev => [...prev, `Error: ${e}`]);
+      console.error('Server error:', e);
     }
   };
 
-  const runCommand = async () => {
-    if (!command.trim()) return;
-    
-    const parts = command.split(' ');
-    const tool = parts[0];
-    const args = parts.slice(1);
-    
+  const runShellAction = async (action: string) => {
+    setLoading(true);
     try {
-      const result = await invoke<{
-        success: boolean;
-        stdout: string;
-        stderr: string;
-        exit_code: number;
-      }>('run_web3_command', { tool, args, cwd: null });
-      
-      setOutput(prev => [
-        ...prev,
-        `$ ${command}`,
-        result.stdout || result.stderr,
-        `Exit code: ${result.exit_code}`,
-        '---'
-      ]);
+      await invoke('run_web3_command', {
+        tool: 'shell-run',
+        args: [action, '--chain', chain, '--network', network],
+        cwd: null
+      });
+      // Refresh reports after action
+      if (activeView === 'reports') {
+        loadReports();
+      }
     } catch (e) {
-      setOutput(prev => [...prev, `Error: ${e}`]);
+      console.error('Action error:', e);
     }
-    
-    setCommand('');
+    setLoading(false);
+  };
+
+  const loadReports = async () => {
+    // This would read from the reports directory
+    // For now, placeholder
+    setReports([
+      { ok: true, summary: 'Test passed (10 passing)', chain: 'evm', runner: 'forge', finishedAt: new Date().toISOString() },
+    ]);
   };
 
   return (
@@ -69,54 +77,105 @@ function App() {
       <header className="header">
         <h1>Shell</h1>
         <span className="subtitle">Web3 Dev Studio</span>
-        <button 
-          className={`server-btn ${serverRunning ? 'running' : ''}`}
-          onClick={toggleServer}
-        >
-          {serverRunning ? '🟢 Server Running' : '🔴 Start Server'}
-        </button>
+        <div className="view-tabs">
+          <button 
+            className={activeView === 'project' ? 'active' : ''}
+            onClick={() => setActiveView('project')}
+          >
+            Project
+          </button>
+          <button 
+            className={activeView === 'reports' ? 'active' : ''}
+            onClick={() => { setActiveView('reports'); loadReports(); }}
+          >
+            Reports
+          </button>
+        </div>
       </header>
       
       <main className="main">
-        <div className="sidebar">
-          <h3>Quick Actions</h3>
-          <button onClick={() => setCommand('forge test')}>Run Forge Tests</button>
-          <button onClick={() => setCommand('forge build')}>Build Contracts</button>
-          <button onClick={() => setCommand('anchor test')}>Run Anchor Tests</button>
-          <button onClick={() => setCommand('slither .')}>Run Security Audit</button>
-          
-          <h3>Templates</h3>
-          <button onClick={() => setCommand('git clone https://github.com/Shell-Templates/erc20')}>
-            New ERC20
-          </button>
-          <button onClick={() => setCommand('git clone https://github.com/Shell-Templates/nft')}>
-            New NFT
-          </button>
-        </div>
-        
-        <div className="content">
-          <div className="terminal">
-            <div className="terminal-output">
-              {output.length === 0 ? (
-                <span className="placeholder">Welcome to Shell - Web3 Dev Studio</span>
-              ) : (
-                output.map((line, i) => (
-                  <div key={i} className="line">{line}</div>
-                ))
-              )}
+        {activeView === 'project' ? (
+          <div className="project-view">
+            <div className="config-section">
+              <div className="config-row">
+                <label>Chain:</label>
+                <select value={chain} onChange={e => setChain(e.target.value)}>
+                  <option value="evm">EVM</option>
+                  <option value="solana">Solana</option>
+                </select>
+              </div>
+              <div className="config-row">
+                <label>Network:</label>
+                <select value={network} onChange={e => setNetwork(e.target.value)}>
+                  {chain === 'solana' ? (
+                    <>
+                      <option value="devnet">Devnet</option>
+                      <option value="testnet">Testnet</option>
+                      <option value="mainnet">Mainnet</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="sepolia">Sepolia</option>
+                      <option value="goerli">Goerli</option>
+                      <option value="mainnet">Mainnet</option>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
-            <div className="terminal-input">
-              <span>$</span>
-              <input
-                type="text"
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && runCommand()}
-                placeholder="Enter command..."
-              />
+            
+            <div className="action-grid">
+              <button onClick={() => runShellAction('build')} disabled={loading}>
+                <span className="icon">🔨</span>
+                Build
+              </button>
+              <button onClick={() => runShellAction('test')} disabled={loading}>
+                <span className="icon">🧪</span>
+                Test
+              </button>
+              <button onClick={() => runShellAction('deploy')} disabled={loading}>
+                <span className="icon">🚀</span>
+                Deploy
+              </button>
+              <button onClick={() => runShellAction('audit')} disabled={loading}>
+                <span className="icon">🔒</span>
+                Audit
+              </button>
+            </div>
+            
+            <div className="server-status">
+              <span>Server:</span>
+              <button 
+                className={`status-btn ${serverRunning ? 'running' : ''}`}
+                onClick={toggleServer}
+              >
+                {serverRunning ? 'Running' : 'Stopped'}
+              </button>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="reports-view">
+            <h2>Test Reports</h2>
+            {reports.length === 0 ? (
+              <p className="empty">No reports yet. Run a test first.</p>
+            ) : (
+              <div className="reports-list">
+                {reports.map((report, i) => (
+                  <div key={i} className={`report-card ${report.ok ? 'success' : 'failure'}`}>
+                    <span className="status">{report.ok ? '✅' : '❌'}</span>
+                    <div className="report-info">
+                      <span className="summary">{report.summary}</span>
+                      <span className="meta">
+                        {report.chain} / {report.runner} 
+                        {report.finishedAt && ` • ${new Date(report.finishedAt).toLocaleTimeString()}`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
