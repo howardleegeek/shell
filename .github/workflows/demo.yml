@@ -30,6 +30,11 @@ jobs:
           forge --version
           anvil --version
 
+      - name: Install deps
+        run: |
+          cd demo/evm-vault
+          forge install foundry-rs/forge-std --no-commit
+
       - name: Build
         run: |
           cd demo/evm-vault
