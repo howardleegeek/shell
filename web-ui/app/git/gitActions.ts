@@ -9,6 +9,9 @@ import {
   resetGit,
 } from './gitMock';
 
+// Expose in-memory git actions so the UI can orchestrate operations
+import { inMemoryGit } from './gitMock';
+
 // AI commit message logic moved to dedicated module for better testability
 import { aiCommitMessage } from './ai-commit-message';
 
@@ -54,4 +57,14 @@ export function getCommits() {
 
 export function reset() {
   resetGit();
+}
+
+// Push a local commit to the remote (simulated in-memory push)
+export function push(): boolean {
+  return inMemoryGit.push();
+}
+
+// Pull remote changes into the local working copy (simulated)
+export function pull(): boolean {
+  return inMemoryGit.pull();
 }
