@@ -16,7 +16,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: howardleegeek/shell
-          path: shell
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -26,41 +25,24 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: |
-          cd shell/demo/evm-vault
-          npm install
-          forge install foundry-rs/forge-std --no-commit
-
       - name: Run shell-run test
         run: |
-          cd shell
-          chmod +x run-shell-run.sh
-          # Create shell-run in PATH
-          mkdir -p $HOME/bin
-          echo '#!/bin/bash' > $HOME/bin/shell-run
-          # GitHub Actions checkout path: /home/runner/work/shell/shell
-          echo 'cd $GITHUB_WORKSPACE/shell && node runner/src/index.js "$@"' >> $HOME/bin/shell-run
-          chmod +x $HOME/bin/shell-run
-          echo "$HOME/bin" >> $GITHUB_PATH
-          
-          # Run test
+          # Run shell-run test directly via node
           cd demo/evm-vault
-          shell-run test --chain evm
+          node ../../runner/src/index.js test --chain evm
 
       - name: Verify test report
         run: |
-          cd shell/demo/evm-vault
-          cat reports/test.evm.forge.json
+          cat demo/evm-vault/reports/test.evm.forge.json
           # Verify report structure
-          echo "ok=$(cat reports/test.evm.forge.json | jq -r '.ok')"
-          echo "passed=$(cat reports/test.evm.forge.json | jq -r '.details.passed')"
+          echo "ok=$(cat demo/evm-vault/reports/test.evm.forge.json | jq -r '.ok')"
+          echo "passed=$(cat demo/evm-vault/reports/test.evm.forge.json | jq -r '.details.passed')"
 
       - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
           name: shell-run-reports
-          path: shell/demo/evm-vault/reports/
+          path: demo/evm-vault/reports/
           retention-days: 7
 
   # Test OpenCrabs with Web3 tools
