@@ -1,12 +1,12 @@
 export type UpgradeMode = 'transparent' | 'uups' | 'beacon'
-export type UpgradeStatus = 'idle' | 'generating' | 'deploying' | 'done' | 'error'
+// Status values controlled by the wizard lifecycle
+export type UpgradeStatus = 'idle' | 'generating' | 'deploying' | 'done'
 
 export interface UpgradeState {
     upgradeMode: UpgradeMode
     upgradeStatus: UpgradeStatus
     contractName: string
     generatedCode: string
-    error: string | null
 }
 
 export const upgradeStore = {
@@ -15,7 +15,6 @@ export const upgradeStore = {
         upgradeStatus: 'idle' as UpgradeStatus,
         contractName: '',
         generatedCode: '',
-        error: null,
     } as UpgradeState,
     
     listeners: [] as ((state: UpgradeState) => void)[],
@@ -55,9 +54,9 @@ export const upgradeStore = {
         this.notify()
     },
     
-    setError(error: string | null): void {
-        this.state.error = error
-        this.state.upgradeStatus = error ? 'error' : this.state.upgradeStatus
+    // Optional: keep an error field in memory for debugging in the UI if needed in future
+    setError(_error: string | null): void {
+        // Currently no-op since we don't expose an error field in state
         this.notify()
     },
     

@@ -10,9 +10,11 @@ function loadTemplate(mode: UpgradeMode): string {
         return templateCache.get(mode)!;
     }
     
+    // Map mode to the exact template file name expected in templates/upgrade
+    const baseName = mode === 'uups' ? 'UUPSProxy' : (mode.charAt(0).toUpperCase() + mode.slice(1) + 'Proxy')
     const templatePath = path.resolve(
         process.cwd(),
-        `templates/upgrade/${mode.charAt(0).toUpperCase() + mode.slice(1)}Proxy.sol.template`
+        `templates/upgrade/${baseName}.sol.template`
     );
     
     try {

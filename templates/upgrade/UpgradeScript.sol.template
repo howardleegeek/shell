@@ -12,7 +12,7 @@ contract UpgradeScript {
         address proxyAdmin
     ) external {
         ProxyAdmin(proxyAdmin).upgrade(
-            TransparentUpgradeableProxy(proayAddress),
+            TransparentUpgradeableProxy(proxyAddress),
             newImplementation
         );
     }

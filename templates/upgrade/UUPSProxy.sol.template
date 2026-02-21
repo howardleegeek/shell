@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/proxy UUPS/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract {{contractName}} is UUPSUpgradeable {
+contract {{contractName}} is Initializable, UUPSUpgradeable {
     uint256 private _value;
 
     event ValueChanged(uint256 value);
