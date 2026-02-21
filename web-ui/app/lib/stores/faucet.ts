@@ -1,4 +1,6 @@
 import { atom } from 'nanostores'
+import { Connection } from '@solana/web3.js'
+import { ethers } from 'ethers'
 
 export type FaucetStatus = 'idle' | 'requesting' | 'success' | 'error'
 
@@ -16,55 +18,87 @@ export const faucetHistory = atom<FaucetRecord[]>([])
 
 export const LAMPORTS_PER_SOL = 1_000_000_000
 
-// Simulated Solana airdrop request (no real network call in tests)
+// Real Solana airdrop request
 export async function requestAirdropSol(pubkey: string, lamports: number): Promise<string> {
   faucetStatus.set('requesting')
-  const txHash = 'tx_' + Date.now().toString(36)
   let current: FaucetRecord[] = []
   try {
     current = (faucetHistory as any).get?.() ?? []
   } catch {
     current = []
   }
-  const next: FaucetRecord[] = [
-    {
-      chain: 'solana',
-      network: 'devnet',
-      amount: lamports,
-      txHash,
-      timestamp: Date.now(),
-    },
-    ...current,
-  ].slice(0, 10)
-  faucetHistory.set(next)
-  faucetStatus.set('success')
-  return txHash
+  
+  try {
+    // Get connection from global state
+    const connection = (window as any).solanaConnection
+    if (!connection || !(connection instanceof Connection)) {
+      throw new Error('Solana connection not available')
+    }
+    
+    const txHash = await connection.requestAirdrop(pubkey, lamports)
+    const next: FaucetRecord[] = [
+      {
+        chain: 'solana',
+        network: 'devnet',
+        amount: lamports,
+        txHash,
+        timestamp: Date.now(),
+      },
+      ...current,
+    ].slice(0, 10)
+    faucetHistory.set(next)
+    faucetStatus.set('success')
+    return txHash
+  } catch (error) {
+    faucetStatus.set('error')
+    throw error
+  }
 }
 
-// Simulated Anvil ETH transfer from local node
-export async function requestAnvilTransfer(pubkey: string, lamportsWei?: number): Promise<string> {
+// Real Anvil ETH transfer from local node
+export async function requestAnvilTransfer(pubkey: string, ethAmountWei?: number): Promise<string> {
   faucetStatus.set('requesting')
-  const amount = lamportsWei ?? 1 * 10 ** 18
-  const txHash = 'anvil_' + Date.now().toString(36)
   let current: FaucetRecord[] = []
   try {
     current = (faucetHistory as any).get?.() ?? []
   } catch {
     current = []
   }
-  const next: FaucetRecord[] = [
-    {
-      chain: 'evm',
-      network: 'anvil',
-      amount,
-      txHash,
-      timestamp: Date.now(),
-    },
-    ...current,
-  ].slice(0, 10)
-  faucetHistory.set(next)
-  faucetStatus.set('success')
-  return txHash
+  
+  try {
+    const amount = ethAmountWei ?? 1 * 10 ** 18
+    
+    // Get provider from global state
+    const provider = (window as any).anvilProvider
+    if (!provider || !(provider instanceof ethers.providers.JsonRpcProvider)) {
+      throw new Error('Anvil provider not available')
+    }
+    
+    const signer = new ethers.Wallet((window as any).anvilPrivateKey, provider)
+    const tx = await signer.sendTransaction({
+      to: pubkey,
+      value: amount,
+      gasLimit: 21000,
+      gasPrice: 1
+    })
+    
+    const next: FaucetRecord[] = [
+      {
+        chain: 'evm',
+        network: 'anvil',
+        amount,
+        txHash: tx.hash,
+        timestamp: Date.now(),
+      },
+      ...current,
+    ].slice(0, 10)
+    faucetHistory.set(next)
+    faucetStatus.set('success')
+    return tx.hash
+  } catch (error) {
+    faucetStatus.set('error')
+    throw error
+  }
 }
 
 export function resetFaucet() {
