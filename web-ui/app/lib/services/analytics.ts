@@ -67,11 +67,27 @@ export const optOutAnalytics = (): void => {
 
 export type EventProperties = Record<string, string | number | boolean | undefined>;
 
+// Persist a lightweight copy of analytics events for a basic dashboard (DAU/WAU/MAU)
+const logDashboardEvent = (event: string, properties?: EventProperties): void => {
+  try {
+    if (typeof window === 'undefined') return;
+    const entry = { event, timestamp: Date.now(), properties };
+    const existingRaw = localStorage.getItem('bolt_dashboard_events');
+    const existing = existingRaw ? (JSON.parse(existingRaw) as any[]) : [];
+    existing.push(entry);
+    localStorage.setItem('bolt_dashboard_events', JSON.stringify(existing));
+  } catch {
+    // ignore dashboard logging failures
+  }
+};
+
 const safeCapture = (event: string, properties?: EventProperties): void => {
   if (!isAnalyticsEnabled() || !posthog) return;
   
   try {
     posthog.capture(event, properties);
+    // Also record a lightweight local copy for dashboard metrics
+    logDashboardEvent(event, properties);
   } catch (error) {
     console.error('[Analytics] Failed to capture event:', error);
   }
