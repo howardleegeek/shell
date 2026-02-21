@@ -1,47 +1,52 @@
 import React from 'react'
 
-export type TemplateItem = {
+type TemplateInfo = {
   id: string
   name: string
   description: string
-  chain: string
-  category: string
   icon: string
   promptTemplate: string
+  category: 'SVM' | 'EVM'
 }
 
-export const TemplateCard: React.FC<{ template: TemplateItem; onUse: () => void }> = ({ template, onUse }) => {
-  const cardStyle: React.CSSProperties = {
-    border: '1px solid #0ff',
-    borderRadius: 8,
-    padding: 12,
-    background: '#0c0f14',
-    color: '#e6faff',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  }
-  const iconStyle: React.CSSProperties = { fontSize: 28, alignSelf: 'flex-start' }
-  const titleStyle: React.CSSProperties = { fontWeight: 700, fontSize: 14 }
-  const descStyle: React.CSSProperties = { fontSize: 12, color: '#cbd5e1' }
-  const buttonStyle: React.CSSProperties = {
-    marginTop: 6,
-    padding: '6px 10px',
-    borderRadius: 6,
-    border: '1px solid #0ff',
-    background: 'transparent',
-    color: '#0ff',
-    cursor: 'pointer',
+type Props = {
+  t: TemplateInfo
+}
+
+export const TemplateCard: React.FC<Props> = ({ t }) => {
+  const handleUse = () => {
+    // Hook this up to AI chat flow in the real app
+    console.log('use-template', t.id, t.name)
   }
 
   return (
-    <div style={cardStyle}>
-      <div style={iconStyle}>{template.icon}</div>
-      <div style={titleStyle}>{template.name}</div>
-      <div style={descStyle}>{template.description}</div>
-      <button style={buttonStyle} onClick={onUse}>Use</button>
+    <div
+      style={{
+        border: '2px solid #2a2a68',
+        borderRadius: 12,
+        padding: 12,
+        background: '#0f0f19',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        minHeight: 150,
+      }}
+    >
+      <div style={{ fontSize: 20 }}>{t.icon} {t.name}</div>
+      <div style={{ color: '#cbd5e1', fontSize: 12, minHeight: 40 }}>{t.description}</div>
+      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={handleUse} style={useButtonStyle}>Use</button>
+      </div>
     </div>
   )
+}
+
+const useButtonStyle: React.CSSProperties = {
+  padding: '6px 10px',
+  borderRadius: 6,
+  border: '1px solid #3f3f8f',
+  background: '#0b0b1a',
+  color: '#7df2ff',
 }
 
 export default TemplateCard
