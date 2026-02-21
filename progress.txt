@@ -6,3 +6,12 @@ tests_passed: true
 summary: Implemented real testnet faucet integration with Solana devnet airdrop, Anvil ETH transfer, and external faucet links
 issues: none
 ---END TASK RESULT---
+
+---TASK RESULT---
+task_id: S40-abi-idl-manager
+status: success
+files_modified: web-ui/app/lib/abi-manager.js, web-ui/app/components/workbench/AbiIdlManager.jsx, web-ui/tests/abi-manager.test.mjs, web-ui/package.json
+tests_passed: true
+summary: Added ABI/IDL manager core with WhatsABI integration hook, ABI viewer/diff/export, contract-address ABI fetch, and executable tests.
+issues: none
+---END TASK RESULT---

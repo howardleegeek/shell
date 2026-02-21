@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "test": "node -e \"console.log('no tests configured')\""
+    "test": "node --test tests/abi-manager.test.mjs"
   },
   "dependencies": {},
   "devDependencies": {}
