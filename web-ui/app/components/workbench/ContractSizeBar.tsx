@@ -23,7 +23,11 @@ type ContractSizeData = {
 }
 
 type Props = {
-  contracts: ContractSizeData[]
+  // Primary API: a list of contracts with embedded EVM/SVM data
+  contracts?: ContractSizeData[]
+  // Backwards-compatibility: allow providing separate EVM and SVM contract lists
+  evmContracts?: Array<{ name: string; deployedBytecode?: string; mockSizeBytes?: number }>
+  svmContracts?: Array<{ name: string; soSizeBytes?: number; mockSizeBytes?: number }>
   // Optional: override display limits (kept for future extension)
   evmLimitKB?: number
   svmLimitMB?: number
@@ -81,7 +85,27 @@ export function computeContractSizes(contract: ContractSizeData): { kind: 'evm' 
   return results
 }
 
-export default function ContractSizeBar({ contracts }: Props) {
+// Build a unified list of contracts from either the primary API or legacy split lists
+function mergeContractsFromProps(p: Props): ContractSizeData[] {
+  if (p.contracts && p.contracts.length > 0) {
+    return p.contracts
+  }
+  const merged: ContractSizeData[] = []
+  if (p.evmContracts) {
+    for (const e of p.evmContracts) {
+      merged.push({ name: e.name, evm: { deployedBytecode: e.deployedBytecode, mockSizeBytes: e.mockSizeBytes } })
+    }
+  }
+  if (p.svmContracts) {
+    for (const s of p.svmContracts) {
+      merged.push({ name: s.name, svm: { soSizeBytes: s.soSizeBytes, mockSizeBytes: s.mockSizeBytes } })
+    }
+  }
+  return merged
+}
+
+export default function ContractSizeBar({ contracts, evmContracts, svmContracts }: Props) {
+  const effectiveContracts = mergeContractsFromProps({ contracts, evmContracts, svmContracts } as any)
   const renderContract = (c: ContractSizeData) => {
     const items = computeContractSizes(c)
     return (
@@ -121,5 +145,5 @@ export default function ContractSizeBar({ contracts }: Props) {
     )
   }
 
-  return <div className="contract-size-bar" style={{ padding: 12 }}>{contracts.map(renderContract)}</div>
+  return <div className="contract-size-bar" style={{ padding: 12 }}>{effectiveContracts.map(renderContract)}</div>
 }
