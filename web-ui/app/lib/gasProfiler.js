@@ -14,7 +14,6 @@ function formatNumber(n) {
 // Function: approve(min)   min: 260  avg: 270  max: 300  calls: 5
 function parseGasReport(text) {
   const lines = (text || "").split(/\r?\n/);
-  const fnRe = /Function:\s*(.+?)\s*(?:min:\s*(\d+)|min:\s*(\d+))\s+avg:\s*(\d+)\s+max:\s*(\d+)\s+calls:\s*(\d+)/i;
   const result = [];
   for (const line of lines) {
     if (!line || line.trim() === "") continue;
