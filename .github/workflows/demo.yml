@@ -1,0 +1,99 @@
+name: Demo EVM Vault
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  evm-vault:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install Foundry
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      # Install Node.js for shell-run
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Install shell-run dependencies
+      - name: Install runner deps
+        run: cd runner && npm install
+
+      # Show versions
+      - name: Show versions
+        run: |
+          forge --version
+          anvil --version
+          node -v
+
+      # Install demo deps
+      - name: Install demo deps
+        working-directory: demo/evm-vault
+        run: forge install
+
+      # 1) First test should FAIL (deliberate event mismatch)
+      - name: Test (expected fail)
+        working-directory: demo/evm-vault
+        run: |
+          cd ../..
+          node runner/src/index.js test --chain evm
+          
+          # Verify report exists and shows failure
+          test -f reports/test.evm.forge.json
+          echo "=== Test Report ==="
+          cat reports/test.evm.forge.json
+          
+          # Assert ok=false
+          jq -e '.ok == false' reports/test.evm.forge.json
+
+      # 2) Apply patch: fix event name (Deposited -> Deposit)
+      - name: Apply patch
+        working-directory: demo/evm-vault
+        run: |
+          # Fix event name mismatch: contract emits Deposited, test expects Deposit
+          sed -i 's/event Deposited/event Deposit/g' src/SimpleVault.sol
+          
+          # Verify fix
+          grep "event Deposit" src/SimpleVault.sol
+
+      # 3) Test should PASS
+      - name: Test (expected pass)
+        working-directory: demo/evm-vault
+        run: |
+          cd ../..
+          node runner/src/index.js test --chain evm
+          
+          # Verify report shows success
+          echo "=== Test Report ==="
+          cat reports/test.evm.forge.json
+          
+          # Assert ok=true
+          jq -e '.ok == true' reports/test.evm.forge.json
+
+      # 4) Deploy on anvil (local)
+      - name: Deploy (anvil)
+        working-directory: demo/evm-vault
+        run: |
+          cd ../..
+          node runner/src/index.js deploy --network anvil --chain evm
+          
+          # Verify deploy report
+          echo "=== Deploy Report ==="
+          cat reports/deploy.evm.anvil.json
+          
+          # Assert has address
+          jq -e '.address and (.address|type=="string") and (.address|length > 0)' reports/deploy.evm.anvil.json
+
+      # Upload reports as artifact
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-reports
+          path: reports/
+          retention-days: 7
