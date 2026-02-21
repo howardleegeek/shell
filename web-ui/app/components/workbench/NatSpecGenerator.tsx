@@ -69,20 +69,50 @@ type Props = {
 export const NatSpecGenerator: React.FC<Props> = ({ editorContent, onInsertEdits }) => {
   const [status, setStatus] = React.useState<string | null>(null)
 
-  const generate = () => {
+  const generate = async () => {
     try {
       const lang = detectLanguage(editorContent)
       if (!lang) {
         setStatus('Unsupported language')
         return
       }
+      // Build a language-specific AI request
+      const systemPrompt = lang === 'solidity'
+        ? `你是 Solidity 文档专家，精通 NatSpec 的格式与约定。为以下 Solidity 代码生成注释。遵循以下约束：1) 只生成注释，不修改代码；2) NatSpec 格式包含：@title、@author、@notice、@dev、@param、@return、@inheritdoc；3) 输出应采用 JSON 列表，形如 [{"line": 行号, "comment": "注释文本"}, ...]。`
+        : `你是 Anchor Rust 文档专家，精通 Rust doc 注释。为以下 Rust/Anchor 代码生成注释。遵循以下约束：1) 只生成注释，不修改代码；2) 使用 /// 形式的注释，覆盖模块、每个 instruction handler、以及 account struct 的字段；3) 输出应采用 JSON 列表，形如 [{"line": 行号, "comment": "注释文本"}, ...]。`
+
+      // Call the AI backend (assumes a /api/generate-docs endpoint exists in the project)
+      setStatus('generating')
+      const res = await fetch('/api/generate-docs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang, code: editorContent, systemPrompt }),
+      })
       let edits: Array<{ line: number; text: string }> = []
-      if (lang === 'solidity') {
-        const blocks = planDocsForSolidity(editorContent)
-        edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+      if (res.ok) {
+        const data = await res.json()
+        // Expected shape: { edits: [ { line: number, comment: string }, ... ] }
+        if (data && Array.isArray(data.edits)) {
+          edits = data.edits.map((e: any) => ({ line: Number(e.line) || 1, text: String(e.comment) }))
+        } else {
+          // Fallback to local planner if AI response is invalid
+          if (lang === 'solidity') {
+            const blocks = planDocsForSolidity(editorContent)
+            edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+          } else {
+            const blocks = planDocsForRust(editorContent)
+            edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+          }
+        }
       } else {
-        const blocks = planDocsForRust(editorContent)
-        edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+        // Fallback to local planner if AI backend is unavailable
+        if (lang === 'solidity') {
+          const blocks = planDocsForSolidity(editorContent)
+          edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+        } else {
+          const blocks = planDocsForRust(editorContent)
+          edits = blocks.map(b => ({ line: b.line, text: b.comment }))
+        }
       }
       setStatus('generated')
       onInsertEdits(edits)
