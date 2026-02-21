@@ -1,6 +1,7 @@
 import { atom } from 'nanostores';
 import type { ChainType } from '~/lib/stores/chain';
 import { getTestCommand, type ParsedTestResults } from '~/lib/web3/test-runner';
+import { analytics } from '~/lib/services/analytics';
 
 export interface TestRunState {
   isRunning: boolean;
@@ -23,6 +24,7 @@ const initialState: TestRunState = {
 export const testRunStore = atom<TestRunState>(initialState);
 
 export function startTestRun(chainType: ChainType, command: string) {
+  analytics.testTriggered(chainType, false);
   testRunStore.set({
     ...testRunStore.get(),
     isRunning: true,
@@ -33,6 +35,8 @@ export function startTestRun(chainType: ChainType, command: string) {
 }
 
 export function completeTestRun(results: ParsedTestResults) {
+  const success = results.passed > 0 && results.failed === 0;
+  analytics.testTriggered(results.chainType, success);
   testRunStore.set({
     ...testRunStore.get(),
     isRunning: false,
@@ -45,6 +49,7 @@ export function completeTestRun(results: ParsedTestResults) {
 }
 
 export function failTestRun(error: string, chainType: ChainType, command: string) {
+  analytics.testTriggered(chainType, false);
   testRunStore.set({
     ...testRunStore.get(),
     isRunning: false,

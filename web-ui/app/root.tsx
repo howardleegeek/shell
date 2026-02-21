@@ -113,6 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 import { logStore } from './lib/stores/logs';
+import { initAnalytics, analytics } from './lib/services/analytics';
 
 export default function App() {
   const theme = useStore(themeStore);
@@ -142,6 +143,11 @@ export default function App() {
       .catch((error) => {
         logStore.logError('Failed to initialize debug logging', error);
       });
+
+    // Initialize analytics
+    initAnalytics().then(() => {
+      analytics.featureUsed('app_initialized');
+    });
   }, []);
 
   return (

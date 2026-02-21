@@ -2,6 +2,7 @@ import ignore from 'ignore';
 import type { ProviderInfo } from '~/types/model';
 import type { Template } from '~/types/template';
 import { STARTER_TEMPLATES } from './constants';
+import { analytics } from '~/lib/services/analytics';
 
 const starterTemplateSelectionPrompt = (templates: Template[]) => `
 You are an experienced developer who helps people choose the best starter template for their projects.
@@ -137,6 +138,8 @@ export async function getTemplates(templateName: string, title?: string) {
   if (!template) {
     return null;
   }
+
+  analytics.templateUsed(templateName, template.category || 'general');
 
   const githubRepo = template.githubRepo;
   const files = await getGitHubRepoContent(githubRepo);

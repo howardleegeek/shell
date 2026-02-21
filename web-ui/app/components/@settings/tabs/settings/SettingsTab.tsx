@@ -5,6 +5,9 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
+import { analyticsEnabledStore, setAnalyticsEnabled } from '~/lib/stores/analytics';
+import { useStore } from '@nanostores/react';
+import { optOutAnalytics, optInAnalytics } from '~/lib/services/analytics';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -32,6 +35,7 @@ export default function SettingsTab() {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         };
   });
+  const analyticsEnabled = useStore(analyticsEnabledStore);
 
   useEffect(() => {
     setCurrentTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -208,6 +212,45 @@ export default function SettingsTab() {
               </kbd>
             </div>
           </div>
+        </div>
+      </motion.div>
+
+      {/* Analytics */}
+      <motion.div
+        className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <div className="i-ph:chart-line-up-fill w-4 h-4 text-purple-500" />
+          <span className="text-sm font-medium text-bolt-elements-textPrimary">Privacy & Analytics</span>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm text-bolt-elements-textPrimary">Usage Analytics</span>
+              <span className="text-xs text-bolt-elements-textSecondary">
+                Help us improve by sharing anonymous usage data
+              </span>
+            </div>
+            <Switch
+              checked={analyticsEnabled}
+              onCheckedChange={async (checked) => {
+                if (checked) {
+                  await optInAnalytics();
+                } else {
+                  optOutAnalytics();
+                }
+                setAnalyticsEnabled(checked);
+                toast.success(`Usage analytics ${checked ? 'enabled' : 'disabled'}`);
+              }}
+            />
+          </div>
+          <p className="text-xs text-bolt-elements-textSecondary mt-2">
+            We never collect code content or wallet addresses. You can opt out at any time.
+          </p>
         </div>
       </motion.div>
     </div>
