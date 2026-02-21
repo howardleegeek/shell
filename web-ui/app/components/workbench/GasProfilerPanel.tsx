@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { parseGasReport, parseComputeReport, colorForGas, generateAiSuggestions } from '../lib/gasProfiler'
+import { parseGasReport, parseComputeReport, colorForGas, generateAiSuggestions, formatNumber } from '../lib/gasProfiler'
 
 type GasFn = { name: string; min: number; avg: number; max: number; calls: number; delta?: number }
 type ComputeInstr = { instruction: string; compute: number }
