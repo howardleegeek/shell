@@ -5,6 +5,8 @@ import { searchKeymap } from '@codemirror/search';
 import { Compartment, EditorSelection, EditorState, StateEffect, StateField, type Extension } from '@codemirror/state';
 import {
   drawSelection,
+  Decoration,
+  DecorationSet,
   dropCursor,
   EditorView,
   highlightActiveLine,
@@ -16,7 +18,7 @@ import {
   tooltips,
   type Tooltip,
 } from '@codemirror/view';
-import { memo, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import type { Theme } from '~/types/theme';
 import { classNames } from '~/utils/classNames';
 import { debounce } from '~/utils/debounce';
@@ -27,6 +29,8 @@ import { getTheme, reconfigureTheme } from './cm-theme';
 import { indentKeyBinding } from './indent';
 import { getLanguage } from './languages';
 import { createEnvMaskingExtension } from './EnvMasking';
+import { useStore } from '@nanostores/react';
+import { auditInlineAnnotations, type AuditInlineAnnotation } from '~/components/workbench/AuditButton';
 
 const logger = createScopedLogger('CodeMirrorEditor');
 
@@ -122,6 +126,42 @@ const editableStateField = StateField.define<boolean>({
   },
 });
 
+const auditDecorationsStateEffect = StateEffect.define<DecorationSet>();
+
+const auditDecorationsStateField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(value, transaction) {
+    for (const effect of transaction.effects) {
+      if (effect.is(auditDecorationsStateEffect)) {
+        return effect.value;
+      }
+    }
+
+    return value.map(transaction.changes);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
+const auditDecorationTheme = EditorView.baseTheme({
+  '.cm-audit-critical, .cm-audit-high': {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'wavy',
+    textDecorationColor: '#ff4d67',
+  },
+  '.cm-audit-medium': {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'wavy',
+    textDecorationColor: '#facc15',
+  },
+  '.cm-audit-low, .cm-audit-info': {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'wavy',
+    textDecorationColor: '#9ca3af',
+  },
+});
+
 export const CodeMirrorEditor = memo(
   ({
     id,
@@ -143,6 +183,15 @@ export const CodeMirrorEditor = memo(
 
     // Add a compartment for the env masking extension
     const [envMaskingCompartment] = useState(new Compartment());
+    const inlineAnnotations = useStore(auditInlineAnnotations);
+
+    const activeAnnotations = useMemo(() => {
+      if (!doc?.filePath) {
+        return [];
+      }
+
+      return inlineAnnotations.filter((annotation) => annotation.file === doc.filePath);
+    }, [doc?.filePath, inlineAnnotations]);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const viewRef = useRef<EditorView>();
@@ -310,6 +359,20 @@ export const CodeMirrorEditor = memo(
       }
     }, [doc?.value, editable, doc?.filePath, autoFocusOnDocumentChange]);
 
+    useEffect(() => {
+      const view = viewRef.current;
+
+      if (!view || !doc || doc.isBinary) {
+        return;
+      }
+
+      const decorations = buildAuditDecorations(view, activeAnnotations);
+
+      view.dispatch({
+        effects: [auditDecorationsStateEffect.of(decorations)],
+      });
+    }, [activeAnnotations, doc?.filePath, doc?.isBinary]);
+
     return (
       <div className={classNames('relative h-full', className)}>
         {doc?.isBinary && <BinaryContent />}
@@ -400,6 +463,8 @@ function newEditorState(
       indentOnInput(),
       editableTooltipField,
       editableStateField,
+      auditDecorationsStateField,
+      auditDecorationTheme,
       EditorState.readOnly.from(editableStateField, (editable) => !editable),
       highlightActiveLineGutter(),
       highlightActiveLine(),
@@ -415,6 +480,45 @@ function newEditorState(
       ...extensions,
     ],
   });
+}
+
+function buildAuditDecorations(view: EditorView, annotations: AuditInlineAnnotation[]) {
+  if (!annotations.length) {
+    return Decoration.none;
+  }
+
+  const marks = annotations
+    .map((annotation) => {
+      if (annotation.line <= 0 || annotation.line > view.state.doc.lines) {
+        return null;
+      }
+
+      const line = view.state.doc.line(annotation.line);
+      const from = Math.max(line.from, line.from + Math.max(0, annotation.column - 1));
+      const to = line.to > from ? line.to : from + 1;
+      const className = getAuditDecorationClass(annotation.severity);
+
+      return Decoration.mark({ class: className }).range(from, to);
+    })
+    .filter(Boolean) as any;
+
+  return Decoration.set(marks, true);
+}
+
+function getAuditDecorationClass(severity: AuditInlineAnnotation['severity']) {
+  if (severity === 'critical' || severity === 'high') {
+    return 'cm-audit-critical';
+  }
+
+  if (severity === 'medium') {
+    return 'cm-audit-medium';
+  }
+
+  if (severity === 'low') {
+    return 'cm-audit-low';
+  }
+
+  return 'cm-audit-info';
 }
 
 function setNoDocument(view: EditorView) {

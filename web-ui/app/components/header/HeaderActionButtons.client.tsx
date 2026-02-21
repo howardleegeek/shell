@@ -4,6 +4,7 @@ import { workbenchStore } from "~/lib/stores/workbench";
 import { DeployButton } from "~/components/deploy/DeployButton";
 import { LocalChainButton } from "~/components/workbench/LocalChainButton";
 import { TestButton } from "~/components/workbench/TestButton";
+import { AuditButton, hasBlockingAuditFindings } from "~/components/workbench/AuditButton";
 
 interface HeaderActionButtonsProps {
   chatStarted: boolean;
@@ -14,6 +15,7 @@ export function HeaderActionButtons({
 }: HeaderActionButtonsProps) {
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
+  const hasBlockingFindings = useStore(hasBlockingAuditFindings);
   const activePreview = previews[activePreviewIndex];
 
   const shouldShowButtons = activePreview;
@@ -26,8 +28,20 @@ export function HeaderActionButtons({
       {/* Test Button */}
       <TestButton />
 
+      {/* Audit Button */}
+      <AuditButton />
+
       {/* Deploy Button */}
-      {shouldShowButtons && <DeployButton />}
+      {shouldShowButtons && (
+        <div className={hasBlockingFindings ? "rounded-md ring-1 ring-red-500/70" : ""}>
+          <DeployButton />
+          {hasBlockingFindings && (
+            <div className="px-2 py-0.5 text-[10px] text-red-300 bg-red-950/40 border-t border-red-500/40">
+              Critical/High findings detected before deploy
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Debug Tools */}
       {shouldShowButtons && (
