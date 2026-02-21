@@ -1,4 +1,5 @@
 import { LanguageDescription, LanguageSupport, StreamLanguage, type StreamParser } from '@codemirror/language';
+import { moveLanguageDescription } from './moveLanguage';
 
 const solidityKeywords = new Set([
   'pragma',
@@ -322,6 +323,7 @@ export const supportedLanguages = [
       return solidityLanguage;
     },
   }),
+  moveLanguageDescription,
   LanguageDescription.of({
     name: 'TOML',
     extensions: ['toml'],
