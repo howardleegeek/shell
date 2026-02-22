@@ -28,7 +28,7 @@
  */
 
 import { spawn } from 'child_process';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { cwd } from 'process';
 
@@ -90,6 +90,17 @@ const log = (msg, type = 'info') => {
     warn: '⚠️'
   }[type] || '•';
   console.log(`${prefix} ${msg}`);
+};
+
+// Lightweight progress logger for retryable tasks
+const logProgress = (message) => {
+  try {
+    const progressPath = join(cwd(), 'progress.txt');
+    const entry = `[${new Date().toISOString()}] ${message}\n`;
+    appendFileSync(progressPath, entry);
+  } catch (e) {
+    // Ignore progress logging failures to avoid breaking the task
+  }
 };
 
 const runCommand = async (cmd, args, cwd = process.cwd()) => {
@@ -155,6 +166,7 @@ const actionTest = async (options) => {
   const projectPath = options.project || cwd();
   
   log(`Running test: chain=${chain}, runner=${runner}`, 'info');
+  logProgress(`TEST_START: chain=${chain}, runner=${runner}, project=${projectPath}`);
   
   const startedAt = nowIso();
   let result;
@@ -207,6 +219,7 @@ const actionTest = async (options) => {
   
   const filename = `test.${chain}.${runner}.json`;
   writeReport(filename, report, projectPath);
+  logProgress(`TEST_DONE: chain=${chain}, runner=${runner}, exit=${report.exitCode}, ok=${report.ok}, summary=${report.summary}`);
   
   return report;
 };
@@ -218,6 +231,7 @@ const actionBuild = async (options) => {
   const projectPath = options.project || cwd();
   
   log(`Running build: chain=${chain}, runner=${runner}`, 'info');
+  logProgress(`BUILD_START: chain=${chain}, runner=${runner}, project=${projectPath}`);
   
   const startedAt = nowIso();
   let result;
@@ -256,6 +270,7 @@ const actionBuild = async (options) => {
   
   const filename = `build.${chain}.${runner}.json`;
   writeReport(filename, report, projectPath);
+  logProgress(`BUILD_DONE: chain=${chain}, runner=${runner}, exit=${report.exitCode}, ok=${report.ok}, summary=${report.summary}`);
   
   return report;
 };
