@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "solana-mcp": {
+      "name": "solana-mcp",
+      "command": "npx",
+      "args": [
+        "-y",
+        "solana-mcp"
+      ],
+      "env": {
+        "SOLANA_RPC_URL": "https://api.devnet.solana.com",
+        "SOLANA_CLUSTER": "devnet"
+      },
+      "capabilities": [
+        "wallet_ops",
+        "spl_tokens",
+        "nft_mint",
+        "TPS_metrics",
+        "getBalance",
+        "requestAirdrop"
+      ]
+    },
+    "evm-mcp-server": {
+      "name": "evm-mcp-server",
+      "command": "npx",
+      "args": [
+        "-y",
+        "evm-mcp-server"
+      ],
+      "env": {
+        "EVM_DEFAULT_NETWORK": "sepolia"
+      },
+      "capabilities": [
+        "balances",
+        "contract_reads_writes",
+        "ERC-20/721/1155",
+        "ENS",
+        "getBalance",
+        "readContract"
+      ]
+    }
+  },
+  "chainModes": {
+    "svm": {
+      "mcpServer": "solana-mcp",
+      "defaultNetwork": "devnet"
+    },
+    "evm": {
+      "mcpServer": "evm-mcp-server",
+      "defaultNetwork": "sepolia"
+    }
+  }
+}
