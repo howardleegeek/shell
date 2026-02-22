@@ -98,8 +98,16 @@ const runCommand = async (cmd, args, cwd = process.cwd()) => {
     let stdout = '';
     let stderr = '';
     
-    child.stdout.on('data', (data) => { stdout += data.toString(); });
-    child.stderr.on('data', (data) => { stderr += data.toString(); });
+    child.stdout.on('data', (data) => {
+      const chunk = data.toString();
+      stdout += chunk;
+      process.stdout.write(chunk);
+    });
+    child.stderr.on('data', (data) => {
+      const chunk = data.toString();
+      stderr += chunk;
+      process.stderr.write(chunk);
+    });
     
     child.on('close', (code) => {
       resolve({ exitCode: code, stdout, stderr });
@@ -231,13 +239,16 @@ const actionBuild = async (options) => {
     ok: result.exitCode === 0,
     chain,
     runner,
+    action: 'build',
     startedAt,
     finishedAt,
-    command: `${runner} build`,
+    command: runner === 'hardhat' ? 'npx hardhat compile' : `${runner} build`,
     exitCode: result.exitCode,
     summary: result.exitCode === 0 
       ? '✅ Build successful' 
       : '❌ Build failed',
+    stdout: result.stdout,
+    stderr: result.stderr,
     details: {
       errors: result.stderr.split('\n').filter(l => l.includes('Error'))
     }
