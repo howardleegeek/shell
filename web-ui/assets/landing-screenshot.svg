@@ -1,0 +1,10 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Landing screenshot placeholder">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop stop-color="#1e3a8a" offset="0%"/>
+      <stop stop-color="#9333ea" offset="100%"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <text x="50%" y="50%" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="48" text-anchor="middle" alignment-baseline="middle">Bolt Web App Preview</text>
+</svg>

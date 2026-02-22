@@ -4,6 +4,7 @@ import { completeTestRun, failTestRun, startTestRun, testRunStore } from '~/lib/
 import { workbenchStore } from '~/lib/stores/workbench';
 import { getTestCommand, parseTestResults } from '~/lib/web3/test-runner';
 import { createScopedLogger } from '~/utils/logger';
+import { isDesktop } from '~/lib/utils/platform';
 
 const logger = createScopedLogger('TestButton');
 const SHELL_READY_TIMEOUT_MS = 10_000;
@@ -82,15 +83,26 @@ export function TestButton() {
   };
 
   return (
-    <button
-      onClick={runTests}
-      disabled={testRun.isRunning}
-      className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60 px-3 py-1.5 text-xs border border-[#39ff14]/70 bg-[#041109] text-[#b2ffbf] hover:text-[#d3ffda] [&:not(:disabled,.disabled)]:hover:bg-[#0a1f12] [&:not(:disabled,.disabled)]:hover:shadow-[0_0_16px_rgba(57,255,20,0.45)] outline-[#39ff14] flex gap-1.5 transition-all duration-150"
-      title={`Run ${chainType.toUpperCase()} tests`}
-      type="button"
-    >
-      <div className={testRun.isRunning ? 'i-ph:spinner-gap animate-spin' : 'i-ph:flask'} />
-      <span>{testRun.isRunning ? 'Running' : 'Test'}</span>
-    </button>
+    <div className="relative inline-flex items-center gap-1">
+      {!isDesktop() && (
+        <span className="absolute -top-2 -right-2 z-10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded">
+          Desktop
+        </span>
+      )}
+      <button
+        onClick={runTests}
+        disabled={testRun.isRunning || !isDesktop()}
+        className={`rounded-md items-center justify-center px-3 py-1.5 text-xs border outline-[#39ff14] flex gap-1.5 transition-all duration-150 ${
+          isDesktop()
+            ? "border-[#39ff14]/70 bg-[#041109] text-[#b2ffbf] hover:text-[#d3ffda] hover:bg-[#0a1f12] hover:shadow-[0_0_16px_rgba(57,255,20,0.45)]"
+            : "border-[#ff4d6d]/40 bg-[#041109]/50 text-[#ff4d6d]/50 cursor-not-allowed opacity-60"
+        } ${testRun.isRunning ? "" : "[&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-60"}`}
+        title={!isDesktop() ? "Running tests locally requires the Desktop app" : `Run ${chainType.toUpperCase()} tests`}
+        type="button"
+      >
+        <div className={testRun.isRunning ? 'i-ph:spinner-gap animate-spin' : 'i-ph:flask'} />
+        <span>{!isDesktop() ? "Desktop Only" : testRun.isRunning ? 'Running' : 'Test'}</span>
+      </button>
+    </div>
   );
 }

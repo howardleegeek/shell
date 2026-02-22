@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { chainType, localChainStore, type ChainType } from "~/lib/stores/chain";
 import { localChainManager } from "~/lib/web3/chain-manager";
 import { getLocalChainConfig } from "~/lib/web3/local-chains";
+import { isDesktop } from "~/lib/utils/platform";
 
 const STATUS_REFRESH_INTERVAL_MS = 5_000;
 
@@ -70,21 +71,34 @@ export function LocalChainButton() {
   };
 
   return (
-    <button
-      type="button"
-      onClick={onToggleChain}
-      disabled={isProcessing}
-      title={`${activeConfig.name} · ${activeConfig.rpcUrl} · ${defaultAccountCount} default account${defaultAccountCount === 1 ? "" : "s"}`}
-      className="rounded-md items-center justify-center [&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-65 px-3 py-1.5 text-xs border border-[#00ff88]/60 bg-[#080a14] text-[#b9ffd4] hover:text-white [&:not(:disabled,.disabled)]:hover:bg-[#111326] [&:not(:disabled,.disabled)]:hover:shadow-[0_0_16px_rgba(0,255,136,0.35)] outline-[#00ff88] flex gap-1.5 transition-all duration-150"
-    >
-      <span
-        className={`h-2 w-2 rounded-full ${
-          isActiveChainRunning
-            ? "bg-[#39ff14] shadow-[0_0_10px_rgba(57,255,20,0.95)]"
-            : "bg-[#ff4d6d] shadow-[0_0_10px_rgba(255,77,109,0.7)]"
-        }`}
-      />
-      <span>{isProcessing ? "Working..." : buttonLabel}</span>
-    </button>
+    <div className="relative inline-flex items-center gap-1">
+      {!isDesktop() && (
+        <span className="absolute -top-2 -right-2 z-10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded">
+          Desktop
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onToggleChain}
+        disabled={isProcessing || !isDesktop()}
+        title={!isDesktop() ? "Local chain is only available in the Desktop app" : `${activeConfig.name} · ${activeConfig.rpcUrl} · ${defaultAccountCount} default account${defaultAccountCount === 1 ? "" : "s"}`}
+        className={`rounded-md items-center justify-center px-3 py-1.5 text-xs border outline-[#00ff88] flex gap-1.5 transition-all duration-150 ${
+          isDesktop()
+            ? "border-[#00ff88]/60 bg-[#080a14] text-[#b9ffd4] hover:text-white hover:bg-[#111326] hover:shadow-[0_0_16px_rgba(0,255,136,0.35)] [&:not(:disabled,.disabled)]:hover:bg-[#111326]"
+            : "border-[#ff4d6d]/40 bg-[#080a14]/50 text-[#ff4d6d]/50 cursor-not-allowed opacity-60"
+        } ${isProcessing ? "" : "[&:is(:disabled,.disabled)]:cursor-not-allowed [&:is(:disabled,.disabled)]:opacity-65"}`}
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${
+            isActiveChainRunning && isDesktop()
+              ? "bg-[#39ff14] shadow-[0_0_10px_rgba(57,255,20,0.95)]"
+              : isDesktop()
+              ? "bg-[#ff4d6d] shadow-[0_0_10px_rgba(255,77,109,0.7)]"
+              : "bg-[#555]"
+          }`}
+        />
+        <span>{!isDesktop() ? "Desktop Only" : isProcessing ? "Working..." : buttonLabel}</span>
+      </button>
+    </div>
   );
 }
