@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+// {{name}} ERC1155 with optional pausable behavior
+contract {{name}} is ERC1155, Ownable {
+    string public name;
+    string public symbol;
+    bool public paused;
+    bool public pausableFlag;
+
+    constructor(string memory uri_, string memory name_, string memory symbol_, bool pausable_) ERC1155(uri_) {
+        name = name_;
+        symbol = symbol_;
+        pausableFlag = pausable_;
+        paused = false;
+    }
+
+    function setPaused(bool v) public onlyOwner {
+        require(pausableFlag, "Pausing disabled");
+        paused = v;
+    }
+
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public onlyOwner {
+        require(!paused, "Contract paused");
+        _mint(to, id, amount, data);
+    }
+
+    function burn(address from, uint256 id, uint256 amount) public onlyOwner {
+        require(!paused, "Contract paused");
+        _burn(from, id, amount);
+    }
+}

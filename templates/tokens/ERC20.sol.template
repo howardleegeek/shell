@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+
+// {{name}} ERC20 token with optional minting, burning and pausing controls
+contract {{name}} is ERC20, Ownable, Pausable {
+    bool public mintable;
+    bool public burnable;
+    bool public pausableFlag;
+
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 initialSupply,
+        bool mintable_,
+        bool burnable_,
+        bool pausable_
+    ) ERC20(name_, symbol_) {
+        _mint(msg.sender, initialSupply);
+        mintable = mintable_;
+        burnable = burnable_;
+        pausableFlag = pausable_;
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner {
+        require(mintable, "Minting disabled");
+        _mint(to, amount);
+    }
+
+    function burn(uint256 amount) public {
+        require(burnable, "Burning disabled");
+        _burn(msg.sender, amount);
+    }
+
+    function pause() public onlyOwner {
+        require(pausableFlag, "Pausing disabled");
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        require(pausableFlag, "Pausing disabled");
+        _unpause();
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+        super._beforeTokenTransfer(from, to, amount);
+        require(!paused(), "Token transfer paused");
+    }
+}
