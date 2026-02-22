@@ -1,37 +1,52 @@
-const fs = require('fs')
-const path = require('path')
+const fs = require('fs');
+const path = require('path');
 
-describe('MCP Foundry Docker config', () => {
-  test('Dockerfile exists and contains Foundry install steps', () => {
-    const p = path.join(__dirname, '..', 'mcp-server', 'Dockerfile')
-    expect(fs.existsSync(p)).toBe(true)
-    const s = fs.readFileSync(p, 'utf8')
-    expect(s).toContain('FROM node:22-bookworm-slim')
-    expect(s).toContain('foundryup')
-  })
+function read(file) {
+  const p = path.resolve(__dirname, '..', file);
+  if (!fs.existsSync(p)) {
+    throw new Error(`Missing file: ${p}`);
+  }
+  return fs.readFileSync(p, 'utf8');
+}
 
-  test('entrypoint.sh exists and starts MCP after Anvil', () => {
-    const p = path.join(__dirname, '..', 'mcp-server', 'entrypoint.sh')
-    expect(fs.existsSync(p)).toBe(true)
-    const s = fs.readFileSync(p, 'utf8')
-    expect(s).toContain('anvil --host 0.0.0.0')
-    expect(s).toContain('node dist/server.js')
-  })
+describe('MCP Server Foundry Docker config', () => {
+  test('Dockerfile exists and contains Foundry setup and MCP server config', () => {
+    const dockerfile = read('mcp-server/Dockerfile');
+    expect(dockerfile).toContain('FROM node:22-bookworm-slim AS base');
+    expect(dockerfile).toContain('RUN curl -L https://foundry.paradigm.xyz | bash');
+    expect(dockerfile).toContain('ENV PATH="/root/.foundry/bin:${PATH}"');
+    expect(dockerfile).toContain('RUN foundryup');
+    expect(dockerfile).toContain('WORKDIR /app');
+    expect(dockerfile).toContain('COPY package.json package-lock.json* ./');
+    expect(dockerfile).toContain('RUN npm install --production');
+    expect(dockerfile).toContain('COPY . .');
+    expect(dockerfile).toContain('RUN npm run build');
+    expect(dockerfile).toContain('EXPOSE 3001');
+    expect(dockerfile).toContain('EXPOSE 8545');
+    expect(dockerfile).toContain('COPY entrypoint.sh /entrypoint.sh');
+    expect(dockerfile).toContain('CMD ["/entrypoint.sh"]');
+  });
 
-  test('docker-compose.yaml exposes ports 3001 and 8545', () => {
-    const p = path.join(__dirname, '..', 'mcp-server', 'docker-compose.yaml')
-    expect(fs.existsSync(p)).toBe(true)
-    const s = fs.readFileSync(p, 'utf8')
-    expect(s).toContain('"3001:3001"')
-    expect(s).toContain('"8545:8545"')
-  })
+  test('entrypoint.sh starts Anvil and then MCP Server', () => {
+    const script = read('mcp-server/entrypoint.sh');
+    expect(script).toContain('# Start Anvil in the background');
+    expect(script).toContain('anvil --host 0.0.0.0 &');
+    expect(script).toContain('# Start MCP Server');
+    expect(script).toContain('exec node dist/server.js --transport sse --port 3001');
+  });
 
-  test('.dockerignore contains node_modules, dist, .git', () => {
-    const p = path.join(__dirname, '..', 'mcp-server', '.dockerignore')
-    expect(fs.existsSync(p)).toBe(true)
-    const s = fs.readFileSync(p, 'utf8')
-    expect(s).toContain('node_modules')
-    expect(s).toContain('dist')
-    expect(s).toContain('.git')
-  })
-})
+  test('docker-compose.yaml exposes correct ports and mounts', () => {
+    const compose = read('mcp-server/docker-compose.yaml');
+    expect(compose).toContain('ports:');
+    expect(compose).toContain('- "3001:3001"');
+    expect(compose).toContain('- "8545:8545"');
+    expect(compose).toContain('- ./projects:/app/projects');
+  });
+
+  test('.dockerignore contains expected patterns', () => {
+    const ignore = read('mcp-server/.dockerignore');
+    expect(ignore).toContain('node_modules');
+    expect(ignore).toContain('dist');
+    expect(ignore).toContain('.git');
+  });
+});
