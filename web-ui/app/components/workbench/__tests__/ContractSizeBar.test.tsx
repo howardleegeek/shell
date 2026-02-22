@@ -50,4 +50,31 @@ describe('ContractSizeBar rendering', () => {
     // SVMLib bar presence
     expect(screen.getByTestId('SVMLib-svm-bar')).toBeTruthy()
   })
+
+  test('evm DeployBytecode size from deployedBytecode string', () => {
+    const contracts = [
+      {
+        name: 'EVMBasic',
+        evm: { deployedBytecode: '0x60016000' }, // 4 bytes
+      },
+    ]
+    render(<ContractSizeBar contracts={contracts} />)
+    // Expect a label showing 4 bytes => 0.0KB / 24KB (0%)
+    expect(screen.getByText('0.0KB / 24KB (0%)')).toBeTruthy()
+  })
+
+  test('shows warning when contract size exceeds limit', () => {
+    const contracts = [
+      {
+        name: 'BigEVMBad',
+        evm: { mockSizeBytes: 30 * 1024 }, // 30KB > 24KB limit
+      },
+    ]
+    render(<ContractSizeBar contracts={contracts} />)
+    expect(
+      screen.getByText(
+        '该合约尺寸超出上限，请考虑拆分或使用库以降低字节码大小。'
+      )
+    ).toBeTruthy()
+  })
 })
