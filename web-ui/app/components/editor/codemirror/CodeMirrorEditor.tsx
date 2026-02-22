@@ -65,6 +65,13 @@ export interface EditorUpdate {
 export type OnChangeCallback = (update: EditorUpdate) => void;
 export type OnScrollCallback = (position: ScrollPosition) => void;
 export type OnSaveCallback = () => void;
+export interface EditorContextMenuPayload {
+  x: number;
+  y: number;
+  selectedText: string;
+  filePath?: string;
+}
+export type OnContextMenuCallback = (payload: EditorContextMenuPayload) => void;
 
 interface Props {
   theme: Theme;
@@ -77,6 +84,7 @@ interface Props {
   onChange?: OnChangeCallback;
   onScroll?: OnScrollCallback;
   onSave?: OnSaveCallback;
+  onContextMenu?: OnContextMenuCallback;
   className?: string;
   settings?: EditorSettings;
 }
@@ -133,6 +141,7 @@ export const CodeMirrorEditor = memo(
     onScroll,
     onChange,
     onSave,
+    onContextMenu,
     theme,
     settings,
     className = '',
@@ -152,6 +161,7 @@ export const CodeMirrorEditor = memo(
     const onScrollRef = useRef(onScroll);
     const onChangeRef = useRef(onChange);
     const onSaveRef = useRef(onSave);
+    const onContextMenuRef = useRef(onContextMenu);
 
     /**
      * This effect is used to avoid side effects directly in the render function
@@ -161,6 +171,7 @@ export const CodeMirrorEditor = memo(
       onScrollRef.current = onScroll;
       onChangeRef.current = onChange;
       onSaveRef.current = onSave;
+      onContextMenuRef.current = onContextMenu;
       docRef.current = doc;
 
       // Update the module-level reference for use in tooltip functions
@@ -343,6 +354,25 @@ function newEditorState(
 
           onScrollRef.current?.({ left: view.scrollDOM.scrollLeft, top: view.scrollDOM.scrollTop });
         }, debounceScroll),
+        contextmenu: (event, view) => {
+          if (!onContextMenuRef.current) {
+            return false;
+          }
+
+          const range = view.state.selection.main;
+          const hasSelection = range.from !== range.to;
+          const selectedText = hasSelection ? view.state.sliceDoc(range.from, range.to) : '';
+
+          onContextMenuRef.current({
+            x: event.clientX,
+            y: event.clientY,
+            selectedText,
+            filePath: docRef.current?.filePath,
+          });
+
+          event.preventDefault();
+          return true;
+        },
         keydown: (event, view) => {
           if (view.state.readOnly) {
             view.dispatch({
