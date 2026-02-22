@@ -6,3 +6,10 @@ tests_passed: true
 summary: Implemented real testnet faucet integration with Solana devnet airdrop, Anvil ETH transfer, and external faucet links
 issues: none
 ---END TASK RESULT---
+
+---PROGRESS NOTE---
+task_id: S02-priority-2-define-what-auton
+what_changed: Added a concrete Autonomous Discovery definition to SPEC.md with mandatory dual outputs (Discovery Spec + Discovery PAT), hard stop rules, and success criteria.
+validation: Added and ran tests/test_autonomous_discovery_spec.sh to verify required sections and fields are present.
+lessons: Keep discovery bounded to concrete artifacts to avoid open-ended exploration loops.
+---END PROGRESS NOTE---
