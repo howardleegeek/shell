@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx src/server.ts",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "test": "node --experimental-strip-types --test src/*.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.4.1",

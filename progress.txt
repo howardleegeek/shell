@@ -6,3 +6,11 @@ tests_passed: true
 summary: Implemented real testnet faucet integration with Solana devnet airdrop, Anvil ETH transfer, and external faucet links
 issues: none
 ---END TASK RESULT---
+---TASK RESULT---
+task_id: S03-define-autonomous-discovery
+status: partial
+files_modified: mcp-server/src/autonomousDiscovery.ts, mcp-server/src/server.ts, mcp-server/src/autonomousDiscovery.test.ts, mcp-server/src/autonomousDiscovery.test.mjs, mcp-server/package.json
+tests_passed: true
+summary: Added concrete autonomous discovery rules (files-to-scan + patterns-to-find), exposed as MCP tool, and added executable tests.
+issues: npm build depends on local tsc package; dependency install hangs in this environment.
+---END TASK RESULT---

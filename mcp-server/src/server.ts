@@ -3,6 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 import express from "express";
+import path from "node:path";
+import { runAutonomousDiscovery } from "./autonomousDiscovery.js";
 
 const server = new McpServer({
   name: "shell-mcp-server",
@@ -15,6 +17,30 @@ server.tool("ping", "Health check for the MCP server", async () => {
     content: [{ type: "text", text: "pong" }],
   };
 });
+
+server.tool(
+  "autonomous_discovery",
+  "Define and execute autonomous discovery: scan concrete files and match concrete risk patterns.",
+  {
+    rootPath: z.string().optional(),
+    maxFiles: z.number().int().positive().max(2000).optional(),
+  },
+  async ({ rootPath, maxFiles }) => {
+    const scanRootPath = rootPath
+      ? path.resolve(rootPath)
+      : process.cwd();
+    const report = await runAutonomousDiscovery(
+      scanRootPath,
+      maxFiles ?? 500,
+    );
+
+    return {
+      content: [
+        { type: "text", text: JSON.stringify(report, null, 2) },
+      ],
+    };
+  },
+);
 
 async function main() {
   const args = process.argv.slice(2);
