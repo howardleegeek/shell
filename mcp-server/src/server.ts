@@ -1,28 +1,28 @@
-// Minimal MCP server bootstrap to register tools.
-// This file is a lightweight facade to expose tools to the MCP runner.
+// Minimal MCP server registry for Forge Build tool integration
+// This file registers MCP tools for the shell's MCP server.
 
-type ToolDescriptor = {
-  name: string
-  description?: string
-  inputSchema?: any
-  run: (input: any) => Promise<any>
-}
+import forge_build from "./tools/forge-build";
 
-// Registry for tools discovered by the MCP runtime
-export const toolRegistry: ToolDescriptor[] = []
+type ToolSpec = {
+  name: string;
+  description: string;
+  inputSchema?: any;
+  run: (...args: any[]) => any;
+};
 
-// Lazy import to avoid circular dependencies during bootstrap in some environments
-try {
-  // V1: try to register the Forge test tool if available
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const forgeTestModule = require('./tools/forge-test')
-  if (forgeTestModule && forgeTestModule.default) {
-    toolRegistry.push(forgeTestModule.default)
-  } else if (forgeTestModule && forgeTestModule.forge_test) {
-    toolRegistry.push(forgeTestModule.forge_test)
-  }
-} catch {
-  // ignore if not present during lightweight bootstrap
-}
+// Simple registry that can be expanded by the hosting environment
+export const tools: ToolSpec[] = [
+  {
+    name: "forge_build",
+    description: "Compile Solidity contracts using Foundry. Returns ABI and bytecode.",
+    inputSchema: {
+      project_dir: "string",
+      contract_name: "string?",
+      optimize: "boolean?",
+      optimize_runs: "number?",
+    },
+    run: forge_build as any,
+  },
+];
 
-export default toolRegistry
+export default tools;
