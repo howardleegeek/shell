@@ -1,5 +1,13 @@
 {
-  "dependencies": {
-    "isomorphic-git": "^1.37.1"
+  "name": "defi-mcp-tools",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "test": "npm run build --silent && node dist/tests/validate_inputSchema.js" 
+  },
+  "devDependencies": {
+    "typescript": "^5.4.2"
   }
 }
