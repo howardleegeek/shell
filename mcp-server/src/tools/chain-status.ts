@@ -1,111 +1,72 @@
-import { z } from 'zod';
+// Simple blockchain status checker using native JSON-RPC over HTTP(S)
+// No external dependencies. Supports Anvil, Hardhat, and generic RPCs.
 
-export interface ChainStatusResult {
-  online: boolean;
-  chain_id: number;
-  block_number: number;
-  accounts: string[];
-  gas_price: string;
-  rpc_url: string;
-  node_type: 'anvil' | 'hardhat' | 'geth' | 'unknown';
-}
+type ChainChoice = "anvil" | "hardhat" | "custom";
 
-export interface ChainStatusOptions {
-  chain?: 'anvil' | 'hardhat' | 'custom';
-  rpc_url?: string;
-}
+export async function chain_status(input: { chain?: ChainChoice; rpc_url?: string }): Promise<any> {
+  const rpc_url = input?.rpc_url ?? "http://127.0.0.1:8545";
 
-const DEFAULT_RPC_URL = 'http://127.0.0.1:8545';
+  // helper: perform a JSON-RPC call with timeout
+  const fetchJsonRpc = async (method: string, params: any[] = []): Promise<any> => {
+    // @ts-ignore - global fetch may be provided by Node >=18
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(rpc_url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: controller.signal,
+      } as any);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(String(data.error?.message ?? data.error));
+      }
+      return data.result;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
 
-const RPC_METHODS = {
-  eth_blockNumber: 'eth_blockNumber',
-  eth_chainId: 'eth_chainId',
-  eth_accounts: 'eth_accounts',
-  net_version: 'net_version',
-  eth_gasPrice: 'eth_gasPrice',
-  web3_clientVersion: 'web3_clientVersion',
-};
-
-export const chainStatusSchema = z.object({
-  chain?: z.enum(['anvil', 'hardhat', 'custom']),
-  rpc_url?: z.string().url().optional(),
-});
-
-export type ChainStatusArgs = z.infer<typeof chainStatusSchema>;
-
-export async function fetchJsonRpc<T>(url: string, method: string, params: any[] = []): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method,
-      params,
-    }),
-    signal: AbortSignal.timeout(5000), // 5 second timeout
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  if (result.error) {
-    throw new Error(`JSON-RPC error: ${result.error.message}`);
-  }
-
-  return result.result;
-}
-
-export function detectNodeType(clientVersion: string): 'anvil' | 'hardhat' | 'geth' | 'unknown' {
-  if (clientVersion.includes('Anvil')) {
-    return 'anvil';
-  }
-  if (clientVersion.includes('Hardhat')) {
-    return 'hardhat';
-  }
-  if (clientVersion.includes('Geth')) {
-    return 'geth';
-  }
-  return 'unknown';
-}
-
-export async function getChainStatus(args: ChainStatusArgs): Promise<ChainStatusResult> {
-  const rpcUrl = args.rpc_url || DEFAULT_RPC_URL;
-  
   try {
-    // Check if node is online
-    const blockNumber = await fetchJsonRpc<string>(rpcUrl, RPC_METHODS.eth_blockNumber);
-    const chainId = await fetchJsonRpc<string>(rpcUrl, RPC_METHODS.eth_chainId);
-    const accounts = await fetchJsonRpc<string[]>(rpcUrl, RPC_METHODS.eth_accounts);
-    const gasPrice = await fetchJsonRpc<string>(rpcUrl, RPC_METHODS.eth_gasPrice);
-    const clientVersion = await fetchJsonRpc<string>(rpcUrl, RPC_METHODS.web3_clientVersion);
-    
+    // Basic metrics
+    const blockHex = await fetchJsonRpc("eth_blockNumber", []);
+    const block_number = parseInt(blockHex, 16);
+    const chainHex = await fetchJsonRpc("eth_chainId", []);
+    const chain_id = parseInt(chainHex, 16);
+    const accounts = await fetchJsonRpc("eth_accounts", []);
+    const netVersion = await fetchJsonRpc("net_version", []);
+    const gas_price = await fetchJsonRpc("eth_gasPrice", []);
+    // Node type detection via client version
+    const clientVersion = await fetchJsonRpc("web3_clientVersion", []);
+    let node_type: "anvil" | "hardhat" | "geth" | "unknown" = "unknown";
+    if (typeof clientVersion === "string") {
+      const cv = clientVersion.toLowerCase();
+      if (cv.includes("anvil")) node_type = "anvil";
+      else if (cv.includes("hardhat")) node_type = "hardhat";
+      else if (cv.includes("geth")) node_type = "geth";
+      else node_type = "unknown";
+    }
+    const online = true;
     return {
-      online: true,
-      chain_id: parseInt(chainId, 16),
-      block_number: parseInt(blockNumber, 16),
-      accounts,
-      gas_price: gasPrice,
+      online,
+      chain_id,
+      block_number,
+      accounts: Array.isArray(accounts) ? accounts : [],
+      gas_price,
       rpc_url,
-      node_type: detectNodeType(clientVersion),
+      node_type,
     };
-  } catch (error) {
+  } catch (err: any) {
     return {
       online: false,
-      chain_id: 0,
-      block_number: 0,
-      accounts: [],
-      gas_price: '0',
+      error: String(err?.message ?? err),
       rpc_url,
-      node_type: 'unknown',
     };
   }
 }
 
-export async function chain_status(args: ChainStatusArgs): Promise<ChainStatusResult> {
-  return getChainStatus(args);
-}
+export default chain_status;
