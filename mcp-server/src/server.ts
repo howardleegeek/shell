@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import express from "express";
-import { createSessionId, parseCliOptions, type CliOptions } from "./types.js";
+import path from "node:path";
+import { runAutonomousDiscovery } from "./autonomousDiscovery.js";
 
 const server = new McpServer({
   name: "shell-mcp-server",
@@ -16,66 +17,99 @@ server.tool("ping", "Health check for the MCP server", async () => {
   };
 });
 
-function installCors(app: ReturnType<typeof express>) {
-  app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type");
-    if (req.method === "OPTIONS") {
-      return res.sendStatus(200);
-    }
-    next();
-  });
-}
-
-async function startSSEServer(options: CliOptions) {
-  const app = express();
-  const transports = new Map<string, SSEServerTransport>();
-
-  installCors(app);
-
-  app.get("/sse", async (req, res) => {
-    req.socket.setTimeout(0);
-    res.socket?.setTimeout(0);
-
-    const sessionId = createSessionId();
-    const transport = new SSEServerTransport(`/messages?sessionId=${sessionId}`, res);
-    transports.set(sessionId, transport);
-
-    req.on("close", () => {
-      transports.delete(sessionId);
-    });
-
-    await server.connect(transport);
-  });
-
-  app.post("/messages", async (req, res) => {
-    const sessionId = String(req.query.sessionId ?? "");
-    const transport = transports.get(sessionId);
-    if (!transport) {
-      res.status(400).send("Session expired or connection not established");
-      return;
-    }
-
-    await transport.handlePostMessage(req, res);
-  });
-
-  app.listen(options.port, options.host, () => {
-    console.log(
-      `[${taskId}] MCP server running on SSE at http://${options.host}:${options.port}/sse`,
+server.tool(
+  "autonomous_discovery",
+  "Define and execute autonomous discovery: scan concrete files and match concrete risk patterns.",
+  {
+    rootPath: z.string().optional(),
+    maxFiles: z.number().int().positive().max(2000).optional(),
+  },
+  async ({ rootPath, maxFiles }) => {
+    const scanRootPath = rootPath
+      ? path.resolve(rootPath)
+      : process.cwd();
+    const report = await runAutonomousDiscovery(
+      scanRootPath,
+      maxFiles ?? 500,
     );
-  });
-}
+
+    return {
+      content: [
+        { type: "text", text: JSON.stringify(report, null, 2) },
+      ],
+    };
+  },
+);
 
 async function main() {
-  const options = parseCliOptions(process.argv.slice(2));
-  if (options.transport === "sse") {
-    await startSSEServer(options);
-    return;
-  }
+  const args = process.argv.slice(2);
+  const isSSE =
+    args.includes("--transport") &&
+    args[args.indexOf("--transport") + 1] === "sse";
+  const portIndex = args.indexOf("--port");
+  const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3001;
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  if (isSSE) {
+    const app = express();
+
+    // 1. 安全修复：允许前端混合端点通信 (CORS) 并拦截恶意溯源
+    app.use((req, res, next) => {
+      res.header("Access-Control-Allow-Origin", "*"); // 这里如果在生产环境需要换成前端明确域名
+      res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type");
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+      }
+      next();
+    });
+
+    // 2. 状态机修复：Session 隔离，防止多客户端互相覆盖数据通信
+    const transports = new Map<string, SSEServerTransport>();
+
+    app.get("/sse", async (req, res) => {
+      // 3. 网络层修复：防止连接由于太久没有链上动作被悄悄掐断 (Idle Timeout)
+      req.socket.setTimeout(0);
+      res.socket?.setTimeout(0);
+
+      // 为每个链接端分配单例 Token
+      const sessionId = Math.random().toString(36).substring(2, 15);
+
+      // 生成独占的 POST 地址告诉它往这发
+      const transport = new SSEServerTransport(
+        `/messages?sessionId=${sessionId}`,
+        res,
+      );
+      transports.set(sessionId, transport);
+
+      // 4. 内存泄漏修复：当刷新网页、断网、关闭时，释放该连接内存池
+      req.on("close", () => {
+        transports.delete(sessionId);
+      });
+
+      await server.connect(transport);
+    });
+
+    app.post("/messages", async (req, res) => {
+      const sessionId = req.query.sessionId as string;
+      const transport = transports.get(sessionId);
+
+      if (transport) {
+        // 交由 transport 原生处理 body 流，避开 body-parser 全局污染限制
+        await transport.handlePostMessage(req, res);
+      } else {
+        res.status(400).send("Session Expired or Connection Not Established");
+      }
+    });
+
+    // 5. 权限逃逸修复：强制将端口监听封死在 `127.0.0.1` 杜绝 0.0.0.0 局域网 RCE 入侵
+    app.listen(port, "127.0.0.1", () => {
+      console.log(`MCP Server running on SSE at http://127.0.0.1:${port}/sse`);
+    });
+  } else {
+    // Default to StdIO transport
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+  }
 }
 
 process.on("uncaughtException", (err) => {

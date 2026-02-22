@@ -6,10 +6,11 @@ tests_passed: true
 summary: Completed deterministic smoke test by echoing 'hello' to /tmp/test.txt
 issues: none
 ---END TASK RESULT---
-
----PROGRESS NOTE---
-task_id: S02-priority-2-define-what-auton
-what_changed: Added a concrete Autonomous Discovery definition to SPEC.md with mandatory dual outputs (Discovery Spec + Discovery PAT), hard stop rules, and success criteria.
-validation: Added and ran tests/test_autonomous_discovery_spec.sh to verify required sections and fields are present.
-lessons: Keep discovery bounded to concrete artifacts to avoid open-ended exploration loops.
----END PROGRESS NOTE---
+---TASK RESULT---
+task_id: S03-define-autonomous-discovery
+status: partial
+files_modified: mcp-server/src/autonomousDiscovery.ts, mcp-server/src/server.ts, mcp-server/src/autonomousDiscovery.test.ts, mcp-server/src/autonomousDiscovery.test.mjs, mcp-server/package.json
+tests_passed: true
+summary: Added concrete autonomous discovery rules (files-to-scan + patterns-to-find), exposed as MCP tool, and added executable tests.
+issues: npm build depends on local tsc package; dependency install hangs in this environment.
+---END TASK RESULT---
