@@ -15,7 +15,12 @@ export default function LocalExplorer(): JSX.Element {
     { address: '0x123...456', balance: '1,001.5 ETH' },
   ];
 
-  const iframeSrc = tab === 'evm' ? (process.env.REACT_APP_EVM_EXPLORER_URL || 'http://localhost:8000') : (process.env.REACT_APP_SOLANA_EXPLORER_URL || 'http://localhost:8899');
+  // Avoid hard-coded localhost in production environments; prefer env vars
+  const defaultSol = 'http://127.0.0.1:8899'
+  const defaultEvm = 'http://127.0.0.1:8000'
+  const iframeSrc = tab === 'evm'
+    ? (process.env.REACT_APP_EVM_EXPLORER_URL || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_EVM_EXPLORER_URL : '') || defaultEvm)
+    : (process.env.REACT_APP_SOLANA_EXPLORER_URL || (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SOLANA_EXPLORER_URL : '') || defaultSol);
 
   return (
     <div style={{
