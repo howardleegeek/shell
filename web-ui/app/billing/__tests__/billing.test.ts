@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getUserPlan, setUserPlan, upgradeUser, canCreateProject, createCheckoutSession, isUpgradeNeeded } from '../../billing/billing';
+import { stripeClient, type Plan } from '../../lib/billing/stripe-client'
 
 describe('Billing module (subscription gating)', () => {
   const userId = 'test-user-1';
@@ -37,4 +38,27 @@ describe('Billing module (subscription gating)', () => {
     expect(url).toContain('checkout.mock');
     expect(typeof sessionId).toBe('string');
   });
+
+  it('Stripe client can create and complete a checkout session', async () => {
+    const plan: Plan = 'pro'
+    const session = await stripeClient.createCheckoutSession(plan)
+    expect(typeof session.id).toBe('string')
+    expect(session.url).toMatch(/checkout/)
+    expect(session.plan).toBe(plan)
+
+    // Listen for completion and ensure callback receives expected data
+    await new Promise<void>((resolve) => {
+      const unsubscribe = stripeClient.onCheckoutComplete((sessionId, completedPlan) => {
+        try {
+          expect(sessionId).toBe(session.id)
+          expect(completedPlan).toBe(plan)
+        } finally {
+          unsubscribe()
+          resolve()
+        }
+      })
+      const ok = stripeClient.completeCheckout(session.id)
+      expect(ok).toBe(true)
+    })
+  })
 });
