@@ -1,31 +1,32 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-echo "task_id: S78-mcp-docker-foundry"
-
-# Start Anvil in the background
+# Start Anvil in background
 anvil --host 0.0.0.0 &
 ANVIL_PID=$!
 
-cleanup() {
-  echo "[ENTRYPOINT] Cleaning up background processes..."
-  if [[ -n "${ANVIL_PID:-}" ]]; then
-    kill "$ANVIL_PID" 2>/dev/null || true
-  fi
-}
-trap cleanup EXIT
+echo "Waiting for Anvil to start..."
 
-echo "[ENTRYPOINT] Waiting for Anvil to become ready (max 10s)..."
-MAX_WAIT=10
-COUNT=0
-until curl -sSf http://localhost:8545 >/dev/null; do
-  COUNT=$((COUNT+1))
-  if [ "$COUNT" -ge "$MAX_WAIT" ]; then
-    echo "[ENTRYPOINT] Anvil did not become ready in time"
-    exit 1
-  fi
-  sleep 1
+# Wait for Anvil to be ready (max 10 seconds)
+for i in {1..10}; do
+    if curl -s http://localhost:8545 &gt;/dev/null; then
+        echo "Anvil is ready"
+        break
+    fi
+    sleep 1
 done
 
-echo "[ENTRYPOINT] Anvil ready. Starting MCP Server..."
+# Check if Anvil started successfully
+if ! curl -s http://localhost:8545 &gt;/dev/null; then
+    echo "Error: Anvil failed to start"
+    kill $ANVIL_PID || true
+    exit 1
+fi
+
+echo "Starting MCP Server..."
+
+# Start MCP Server in foreground
 node dist/server.js --transport sse --port 3001
+
+# Cleanup on exit
+trap 'kill $ANVIL_PID || true' EXIT
