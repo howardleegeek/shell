@@ -327,6 +327,60 @@ Reporting + Validation Pipeline
 "运行 evm_forge_test 并把失败日志总结成修复 patch"
 ```
 
+## Priority 2: Autonomous Discovery Deliverable Definition
+
+`autonomous discovery` 的交付必须是可验收产物，而不是“持续探索”过程。
+
+### Definition
+
+每次 discovery run 必须同时输出两个工件：
+
+1. `Discovery Spec` (`reports/discovery.spec.json`)
+2. `Discovery PAT` (`reports/discovery.pat.json`)
+
+只输出其中一个视为失败。
+
+### Discovery Spec (What was discovered)
+
+`Discovery Spec` 必须包含：
+
+- `problem_statement`: 当前要解决的问题边界
+- `constraints`: 时间、依赖、风险、预算约束
+- `hypotheses`: 待验证假设列表（每项可证伪）
+- `decision_policy`: 选择/淘汰候选方案的规则
+- `exit_criteria`: 结束探索的硬条件
+- `non_goals`: 明确不做什么
+- `recommended_next_action`: 下一步可执行动作
+
+### Discovery PAT (Proof of applicability)
+
+`PAT` = `Proof of Applicability Test`，用于证明 discovery 结果可以落地。
+
+`Discovery PAT` 必须包含：
+
+- `candidate`: 被验证方案名称
+- `test_protocol`: 执行步骤（可复现）
+- `evidence`: 关键证据（报告、日志、指标）
+- `result`: `pass` 或 `fail`
+- `failure_mode`: 失败时的主要失效模式
+- `follow_up_action`: 对应后续动作（继续/修复/终止）
+
+### Hard Stop Rules (Anti-Drift)
+
+若满足任一条件，必须停止 discovery 并输出失败结论：
+
+- 连续 2 次 PAT 失败且 failure mode 相同
+- 发现候选方案都无法满足 `constraints`
+- 无法在当前周期内产出 `recommended_next_action`
+
+### Success Criteria
+
+一个 `autonomous discovery` 任务只有在以下条件全部成立时才算完成：
+
+- `discovery.spec.json` 与 `discovery.pat.json` 均存在
+- `discovery.pat.json.result == "pass"`
+- `recommended_next_action` 可在下一迭代直接执行
+
 ## License
 
 MIT

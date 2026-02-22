@@ -6,11 +6,10 @@ tests_passed: true
 summary: Completed deterministic smoke test by echoing 'hello' to /tmp/test.txt
 issues: none
 ---END TASK RESULT---
----TASK RESULT---
-task_id: S02-cyberpunk-theme
-status: success
-files_modified: web-ui/app/root.tsx, web-ui/app/entry.server.tsx, web-ui/app/styles/index.scss, web-ui/app/__tests__/cyberpunk-theme.test.ts
-tests_passed: true
-summary: Applied cyberpunk UI theme variables/effects, wired JetBrains Mono, and updated branding to Shell + Web3 Vibe Coding.
-issues: pnpm unavailable in environment and network blocked; verified acceptance points via local Node assertions.
----END TASK RESULT---
+
+---PROGRESS NOTE---
+task_id: S02-priority-2-define-what-auton
+what_changed: Added a concrete Autonomous Discovery definition to SPEC.md with mandatory dual outputs (Discovery Spec + Discovery PAT), hard stop rules, and success criteria.
+validation: Added and ran tests/test_autonomous_discovery_spec.sh to verify required sections and fields are present.
+lessons: Keep discovery bounded to concrete artifacts to avoid open-ended exploration loops.
+---END PROGRESS NOTE---
