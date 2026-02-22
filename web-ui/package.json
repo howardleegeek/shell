@@ -2,11 +2,8 @@
   "name": "shell-web-ui",
   "version": "0.1.0",
   "private": true,
-  "description": "Shell - Web3 Vibe Coding IDE",
-  "license": "MIT",
-  "dependencies": {
-    "@stripe/stripe-js": "^8.8.0",
-    "ethers": "^6.9.0"
+  "scripts": {
+    "test": "node --test tests/abi-manager.test.mjs"
   },
   "scripts": {
     "dev": "node server.js",
