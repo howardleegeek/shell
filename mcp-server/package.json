@@ -6,7 +6,10 @@
   "scripts": {
     "start": "tsx src/server.ts",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "test": "node --test test/**/*.test.mjs",
+    "lint": "node --check src/stress-harness.mjs src/stress-cli.mjs test/stress-harness.test.mjs",
+    "stress:test": "node src/stress-cli.mjs --tasks 60 --concurrency 50"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.4.1",
