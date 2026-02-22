@@ -49,7 +49,8 @@
         "name": "Simple Vault",
         "description": "Create a Solidity vault contract that accepts ETH deposits, tracks balances per user, and allows withdrawals. Include emergency withdraw for owner. Use ReentrancyGuard.",
         "icon": "🏦",
-        "promptTemplate": "Create a Solidity vault contract that accepts ETH deposits, tracks balances per user, and allows withdrawals. Include emergency withdraw for owner. Use ReentrancyGuard."
+        "promptTemplate": "Create a Solidity vault contract that accepts ETH deposits, tracks balances per user, and allows withdrawals. Include emergency withdraw for owner. Use ReentrancyGuard.",
+        "source": "./mcp-server/templates/defi-vault" 
       },
       "dex-amm": {
         "name": "DEX (AMM)",
