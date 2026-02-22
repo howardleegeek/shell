@@ -1,0 +1,36 @@
+.audit-explainer {
+  padding: 12px;
+}
+.finding-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+.fe-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.severity-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.severity-Critical { background: #e11d48; }
+.severity-High { background: #f59e0b; }
+.severity-Medium { background: #facc15; }
+.severity-Low { background: #3b82f6; }
+.finding-title { font-weight: 600; }
+.finding-desc { color: #555; margin-left: 6px; }
+.btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; }
+.explain-btn { background: #0b5fff; color: white; }
+.apply-btn { background: #10b981; color: white; margin-left: auto; }
+.ai-panel { margin-top: 8px; padding: 8px; border-top: 1px solid #eee; }
+.ai-section { margin: 6px 0; }
+.fix-code { background: #f6f8fa; padding: 8px; border-radius: 4px; overflow: auto; }
+.empty { color: #888; }
+.@media (max-width: 600px) {
+  .fe-header { flex-wrap: wrap; }
+}

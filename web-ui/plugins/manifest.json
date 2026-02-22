@@ -1,0 +1,11 @@
+{
+  "plugins": [
+    {
+      "id": "demo-plugin",
+      "name": "Demo Plugin",
+      "version": "0.1.0",
+      "description": "A demo built-in plugin",
+      "entry": "demo-plugin.js"
+    }
+  ]
+}
