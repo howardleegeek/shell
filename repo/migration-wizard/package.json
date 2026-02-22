@@ -1,0 +1,11 @@
+{
+  "name": "migration-wizard-skeleton",
+  "version": "0.1.0",
+  "description": "Skeleton for Solidity→Solana migration wizard",
+  "main": "migrate.js",
+  "type": "commonjs",
+  "scripts": {
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {}
+}
