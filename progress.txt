@@ -1,16 +1,10 @@
----TASK RESULT---
-task_id: S01-run-a-deterministic-smoke-test
-status: success
-files_modified: 
-tests_passed: true
-summary: Completed deterministic smoke test by echoing 'hello' to /tmp/test.txt
-issues: none
----END TASK RESULT---
----TASK RESULT---
-task_id: S70-share-snippet
-status: partial
-files_modified: web-ui/app/components/workbench/ShareSnippet.tsx, web-ui/app/components/workbench/ShareSnippet.test.tsx
-tests_passed: false
-summary: Implemented local cyberpunk snippet sharing card with PNG/image clipboard/Markdown export and Monaco token color mapping helpers
-issues: Unable to run vitest because dependencies cannot be installed in this environment (npm registry DNS EAI_AGAIN)
----END TASK RESULT---
+8: ---END TASK RESULT---
+
+9: ---TASK RESULT---
+10: task_id: S54-mcp-servers-config
+11: status: success
+12: files_modified: desktop/mcp-servers.json
+13: tests_passed: true
+14: summary: Updated MCP servers configuration to use the open-source Solana MCP and evm-mcp-server backends (solana-mcp, evm-mcp-server)
+15: issues: none
+16: ---END TASK RESULT---
