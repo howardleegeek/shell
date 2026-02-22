@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 import express from "express";
+import { registerSecurityAuditTool } from "./tools/slither-audit.js";
 
 const server = new McpServer({
   name: "shell-mcp-server",
@@ -15,6 +16,8 @@ server.tool("ping", "Health check for the MCP server", async () => {
     content: [{ type: "text", text: "pong" }],
   };
 });
+
+registerSecurityAuditTool(server);
 
 async function main() {
   const args = process.argv.slice(2);
