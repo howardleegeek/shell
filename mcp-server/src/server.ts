@@ -1,68 +1,55 @@
 #!/usr/bin/env node
 import { McpServer, StdioServerTransport, SSEServerTransport } from "@modelcontextprotocol/sdk/server";
-import { ForgeTestResult, BuildResult, DeployResult, ReportData } from "./types";
 
-// Very small, minimal MCP server skeleton.
-// Command line: --transport stdio|sse --port 3001
+async function main() {
+  // Read transport and port from CLI
+  const argv = process.argv;
+  const tIdx = argv.indexOf("--transport");
+  const transport = tIdx !== -1 && tIdx + 1 < argv.length ? String(argv[tIdx + 1]) : "stdio";
+  const pIdx = argv.indexOf("--port");
+  const port = pIdx !== -1 && pIdx + 1 < argv.length ? Number(argv[pIdx + 1]) : 3001;
 
-function parseArgs() {
-  const args = process.argv.slice(2);
-  const cfg: { transport: "stdio" | "sse"; port?: number } = { transport: "stdio" };
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (a === "--transport" && i + 1 < args.length) {
-      const t = (args[i + 1] as string).toLowerCase();
-      cfg.transport = t === "stdio" ? "stdio" : "sse";
-      i++;
-    } else if (a === "--port" && i + 1 < args.length) {
-      const p = parseInt(args[i + 1], 10);
-      if (!Number.isNaN(p)) cfg.port = p;
-      i++;
-    }
-  }
-  return cfg;
-}
-
-function main() {
-  const cfg = parseArgs();
-  let transport: any;
-  if (cfg.transport === "stdio") {
-    transport = new StdioServerTransport();
+  let transportInstance: any;
+  if (transport === "stdio") {
+    transportInstance = new StdioServerTransport();
+  } else if (transport === "sse") {
+    transportInstance = new SSEServerTransport({ port });
   } else {
-    const port = cfg.port ?? 3001;
-    transport = new SSEServerTransport({ port });
+    console.error(`Unknown transport: ${transport}`);
+    process.exit(1);
   }
 
-  // Instantiate MCP Server
-  const server: any = new McpServer({ transport });
+  // Instantiate MCP server with the chosen transport
+  const MCPServer: any = McpServer;
+  const server: any = new MCPServer({ transport: transportInstance });
 
-  // Register a simple health ping tool
-  const pingTool = {
-    name: "ping",
-    run: async (_input?: any) => {
-      return { ok: true, message: "pong" };
-    }
-  };
-
-  // Some MCP servers expose a `register` method; guard against variations.
-  if (typeof server.register === "function") {
-    server.register(pingTool);
-  } else if (typeof server.registerTool === "function") {
-    server.registerTool(pingTool);
+  // Register a simple health check tool 'ping' for MCP protocol
+  if (typeof server.registerTool === "function") {
+    server.registerTool("ping", async (params: any) => {
+      return { ok: true, result: "pong" };
+    });
   } else if (typeof server.addTool === "function") {
-    server.addTool(pingTool);
+    server.addTool("ping", async (params: any) => {
+      return { ok: true, result: "pong" };
+    });
   } else {
-    // Fallback: attach to a known property if available
-    (server as any).tools = [(server as any).tools?.[0] ?? pingTool];
+    // Fallback: expose a no-op to avoid crashing if API differs
+    console.warn("MCP server has no registerTool/addTool method; no ping tool registered.");
   }
 
-  // Start listening/serving (depending on transport, the MCP server might auto-start)
+  // Attempt to start the server if a start() API exists
   if (typeof server.start === "function") {
-    server.start();
+    await server.start();
   } else {
-    // Best-effort: if transport is stdio, nothing else to do
-    console.log("MCP server initialized with transport:", cfg.transport);
+    // If start is not explicit, assume construction with transport is enough
+    console.log("MCP Server initialized with transport; no explicit start() method.");
   }
+
+  // Keep process alive
+  process.stdin.resume();
 }
 
-main();
+main().catch((err) => {
+  console.error("MCP server failed", err);
+  process.exit(1);
+});

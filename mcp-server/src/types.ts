@@ -1,7 +1,7 @@
 export interface ForgeTestResult {
   test_name: string;
-  status: string;
-  gas_used?: number;
+  status: 'pass' | 'fail' | 'skip';
+  gas_used?: string;
   logs?: string[];
 }
 
@@ -13,13 +13,13 @@ export interface BuildResult {
 }
 
 export interface DeployResult {
-  address?: string;
+  address: string;
   tx_hash?: string;
   chain?: string;
 }
 
 export interface ReportData {
   timestamp: string;
-  results: Array<ForgeTestResult | BuildResult | DeployResult>;
+  results: (ForgeTestResult | BuildResult | DeployResult)[];
   summary?: string;
 }
