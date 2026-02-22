@@ -20,6 +20,16 @@ import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('mcp-service');
 
+// Default Shell MCP Server configuration (non-blocking, non-intrusive)
+// Note: only fields supported by the MCP config schema are used at runtime.
+// Extra metadata (name, description, etc.) is kept for readability here only.
+const DEFAULT_SHELL_MCP = {
+  name: 'shell-web3-tools',
+  type: 'sse',
+  // URL can be overridden by env var SHELL_MCP_URL
+  url: (process.env as any).SHELL_MCP_URL || 'http://localhost:3001/sse',
+} as const;
+
 export const stdioServerConfigSchema = z
   .object({
     type: z.enum(['stdio']).optional(),
