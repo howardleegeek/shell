@@ -1,8 +1,10 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Shell Web UI - bolt.diy fork</title>
+<head>
+  <meta charset="utf-8" />
+  <!-- Content Security Policy to prevent XSS and data exfiltration -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'" />
+  <title>Shell Web UI - bolt.diy fork</title>
     <style>
       body { font-family: Arial, sans-serif; padding: 20px; }
       .panel { border: 1px solid #ddd; padding: 16px; border-radius: 8px; max-width: 800px; }
