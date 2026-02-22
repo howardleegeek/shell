@@ -1,0 +1,11 @@
+{
+  "name": "mcp-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'build mock'",
+    "test": "node -e \"const fs=require('fs'); const files=['Dockerfile','entrypoint.sh','docker-compose.yaml','.dockerignore','package.json']; const ok=files.every(f=>fs.existsSync(f)); process.exit(ok?0:1);\""
+  },
+  "type": "commonjs",
+  "dependencies": {}
+}
