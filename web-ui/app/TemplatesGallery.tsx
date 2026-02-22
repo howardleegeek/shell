@@ -48,6 +48,11 @@ export const TemplateCard: React.FC<{ template: TemplateItem; onUse: () => void 
 export const TemplateGallery: React.FC = () => {
   const [tab, setTab] = useState<'SVM' | 'EVM'>('SVM')
   const [query, setQuery] = useState('')
+  const [introVisible, setIntroVisible] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    // Show intro on first open only
+    return localStorage.getItem('bolt_template_intro_seen') !== '1'
+  })
 
   // Normalize registry shape to a flat array of TemplateItem
   const itemsFromRegistry: TemplateItem[] = useMemo(() => {
@@ -114,8 +119,51 @@ export const TemplateGallery: React.FC = () => {
   const startRowStyle: React.CSSProperties = { marginTop: 18, display: 'flex', justifyContent: 'flex-end' }
   const startButtonStyle: React.CSSProperties = { padding: '8px 14px', borderRadius: 6, border: '1px solid #0ff', background: '#001522', color: '#0ff', cursor: 'pointer' }
 
+  // Intro overlay that shows on first open
+  const introPanelStyle: React.CSSProperties = {
+    width: 520,
+    maxWidth: '90%',
+    padding: 20,
+    borderRadius: 8,
+    background: '#0b1220',
+    border: '1px solid #0ff',
+    color: '#e6faff',
+  }
+  const overlayStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(0,0,0,0.5)',
+    zIndex: 20,
+  }
   return (
-    <div style={containerStyle}>
+    <div style={{ ...containerStyle, position: 'relative' }}>
+      {introVisible && (
+        <div style={overlayStyle}>
+          <div style={introPanelStyle}>
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Welcome to Web3 Prompt Templates</div>
+            <div style={{ fontSize: 14, color: '#cbd5e1', marginBottom: 12 }}>
+              Quick-start: pick a template to auto-fill your chat prompt. This panel only appears on first open.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #0ff', background: '#001522', color: '#0ff', cursor: 'pointer' }}
+                onClick={() => {
+                  setIntroVisible(false)
+                  localStorage.setItem('bolt_template_intro_seen', '1')
+                }}
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={headerStyle}>Template Gallery</div>
       <div style={toolbarStyle}>
         <button className="tab-svm" style={tab === 'SVM' ? activeTabStyle : tabButtonStyle} onClick={() => setTab('SVM')}>SVM</button>

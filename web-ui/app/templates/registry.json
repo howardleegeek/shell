@@ -1,0 +1,68 @@
+{
+  "templates": {
+    "solana": {
+      "spl-token": {
+        "name": "SPL Token",
+        "description": "Create a Solana SPL token program using Anchor. Include mint, transfer, and burn instructions. Use Anchor's #[account] macros for account validation.",
+        "icon": "🪙",
+        "promptTemplate": "Create a Solana SPL token program using Anchor. Include mint, transfer, and burn instructions. Use Anchor's #[account] macros for account validation."
+      },
+      "nft-collection": {
+        "name": "NFT Collection",
+        "description": "Create a Solana NFT collection program using Anchor with Metaplex standards. Include mint_nft, update_metadata, and verify_collection instructions.",
+        "icon": "🎨",
+        "promptTemplate": "Create a Solana NFT collection program using Anchor with Metaplex standards. Include mint_nft, update_metadata, and verify_collection instructions."
+      },
+      "staking": {
+        "name": "Staking Program",
+        "description": "Create a Solana staking program using Anchor. Users can stake SOL, earn rewards over time, and unstake. Include reward calculation based on time staked.",
+        "icon": "⚖️",
+        "promptTemplate": "Create a Solana staking program using Anchor. Users can stake SOL, earn rewards over time, and unstake. Include reward calculation based on time staked."
+      },
+      "escrow": {
+        "name": "Escrow",
+        "description": "Create a Solana escrow program using Anchor. Allow two parties to swap tokens atomically with cancel and execute instructions.",
+        "icon": "🤝",
+        "promptTemplate": "Create a Solana escrow program using Anchor. Allow two parties to swap tokens atomically with cancel and execute instructions."
+      },
+      "dao-voting": {
+        "name": "DAO Voting",
+        "description": "Create a simple Solana DAO voting program using Anchor. Members can create proposals, vote yes/no, and execute proposals that pass threshold.",
+        "icon": "🗳️",
+        "promptTemplate": "Create a simple Solana DAO voting program using Anchor. Members can create proposals, vote yes/no, and execute proposals that pass threshold."
+      }
+    },
+    "evm": {
+      "erc20-token": {
+        "name": "ERC-20 Token",
+        "description": "Create an ERC-20 token contract using Solidity 0.8+. Include mint (owner only), burn, and transfer. Use OpenZeppelin's ERC20 base. Add constructor params for name, symbol, and initial supply.",
+        "icon": "💠",
+        "promptTemplate": "Create an ERC-20 token contract using Solidity 0.8+. Include mint (owner only), burn, and transfer. Use OpenZeppelin's ERC20 base. Add constructor params for name, symbol, and initial supply."
+      },
+      "erc721-nft": {
+        "name": "ERC-721 NFT",
+        "description": "Create an ERC-721 NFT contract using Solidity 0.8+ with OpenZeppelin. Include safeMint with tokenURI, royalties (ERC-2981), and max supply limit.",
+        "icon": "🎴",
+        "promptTemplate": "Create an ERC-721 NFT contract using Solidity 0.8+ with OpenZeppelin. Include safeMint with tokenURI, royalties (ERC-2981), and max supply limit."
+      },
+      "simple-vault": {
+        "name": "Simple Vault",
+        "description": "Create a Solidity vault contract that accepts ETH deposits, tracks balances per user, and allows withdrawals. Include emergency withdraw for owner. Use ReentrancyGuard.",
+        "icon": "🏦",
+        "promptTemplate": "Create a Solidity vault contract that accepts ETH deposits, tracks balances per user, and allows withdrawals. Include emergency withdraw for owner. Use ReentrancyGuard."
+      },
+      "dex-amm": {
+        "name": "DEX (AMM)",
+        "description": "Create a simple constant-product AMM (x*y=k) in Solidity. Include addLiquidity, removeLiquidity, and swap functions. Calculate fees at 0.3%.",
+        "icon": "🧮",
+        "promptTemplate": "Create a simple constant-product AMM (x*y=k) in Solidity. Include addLiquidity, removeLiquidity, and swap functions. Calculate fees at 0.3%."
+      },
+      "governance": {
+        "name": "Governance",
+        "description": "Create a Solidity governance contract using OpenZeppelin Governor. Include propose, vote, queue, and execute. Voting period 1 week, quorum 4%.",
+        "icon": "🏛️",
+        "promptTemplate": "Create a Solidity governance contract using OpenZeppelin Governor. Include propose, vote, queue, and execute. Voting period 1 week, quorum 4%."
+      }
+    }
+  }
+}
