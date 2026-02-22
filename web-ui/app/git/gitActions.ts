@@ -9,6 +9,12 @@ import {
   resetGit,
 } from './gitMock';
 
+// Expose in-memory git actions so the UI can orchestrate operations
+import { inMemoryGit } from './gitMock';
+
+// AI commit message logic moved to dedicated module for better testability
+import { aiCommitMessage } from './ai-commit-message';
+
 // Expose a small API for the UI to orchestrate git-like interactions
 
 export function getStatus() {
@@ -31,17 +37,13 @@ export function getDiff(path: string) {
   return diff(path);
 }
 
-export function aiCommitMessage(): string {
-  // Simple heuristic: summarize number of staged changes
-  const changes = getStatus().filter((f: any) => f.status !== 'unchanged');
-  const n = changes.length;
-  if (n === 0) return 'chore: update';
-  const names = changes.map((c: any) => c.path.split('/').pop()).join(', ');
-  return `feat(models): commit ${n} file(s) - ${names}`;
+export function aiCommitMessageProxy(): string {
+  // Delegate to the dedicated AI message module
+  return aiCommitMessage();
 }
 
 export function commitWithAI(): boolean {
-  const msg = aiCommitMessage();
+  const msg = aiCommitMessageProxy();
   return commit(msg);
 }
 
@@ -55,4 +57,14 @@ export function getCommits() {
 
 export function reset() {
   resetGit();
+}
+
+// Push a local commit to the remote (simulated in-memory push)
+export function push(): boolean {
+  return inMemoryGit.push();
+}
+
+// Pull remote changes into the local working copy (simulated)
+export function pull(): boolean {
+  return inMemoryGit.pull();
 }

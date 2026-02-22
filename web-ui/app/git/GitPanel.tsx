@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+// Use the gitActions API facade
 import { getStatus, stage, unstage, commitWithAI } from './gitActions';
 
 type FileItem = { path: string; status: string };
