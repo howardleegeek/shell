@@ -1,0 +1,7 @@
+# Auto-generated for frontend tasks: limit LLM context without destroying FS
+node_modules/
+.next/
+dist/
+build/
+coverage/
+*.lock
