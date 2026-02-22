@@ -6,3 +6,11 @@ tests_passed: true
 summary: Implemented real testnet faucet integration with Solana devnet airdrop, Anvil ETH transfer, and external faucet links
 issues: none
 ---END TASK RESULT---
+---TASK RESULT---
+task_id: S01-add-a-single-deterministic-end
+status: success
+files_modified: tests/init_deterministic_e2e.sh
+tests_passed: true
+summary: Added a deterministic end-to-end regression gate validating init.sh cleanup output and idempotence.
+issues: Existing web-ui npm test cannot run in this environment because vitest is not installed.
+---END TASK RESULT---
