@@ -178,6 +178,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             'transition-all duration-200',
             'hover:border-bolt-elements-focus',
           )}
+          data-tour="ai-chat"
           onDragEnter={(e) => {
             e.preventDefault();
             e.currentTarget.style.border = '2px solid #1488fc';

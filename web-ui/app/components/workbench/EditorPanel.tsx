@@ -146,7 +146,7 @@ export const EditorPanel = memo(
             </Panel>
 
             <PanelResizeHandle />
-            <Panel className="flex flex-col" defaultSize={80} minSize={20}>
+            <Panel className="flex flex-col" defaultSize={80} minSize={20} data-tour="code-editor">
               <PanelHeader className="overflow-x-auto">
                 {activeFileSegments?.length && (
                   <div className="flex items-center flex-1 text-sm">

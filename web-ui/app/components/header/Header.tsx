@@ -19,6 +19,7 @@ export function Header() {
           "border-bolt-elements-borderColor": chat.started,
         },
       )}
+      data-tour="welcome"
     >
       <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
         <div className="i-ph:sidebar-simple-duotone text-xl" />

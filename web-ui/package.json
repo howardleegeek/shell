@@ -83,6 +83,7 @@
     "date-fns": "^3.6.0",
     "diff": "^5.2.0",
     "dotenv": "^16.4.7",
+    "driver.js": "^1.4.0",
     "electron-log": "^5.2.3",
     "electron-store": "^10.1.0",
     "electron-updater": "^6.3.9",

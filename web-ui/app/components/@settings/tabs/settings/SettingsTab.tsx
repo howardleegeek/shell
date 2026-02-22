@@ -5,9 +5,7 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
-import { analyticsEnabledStore, setAnalyticsEnabled } from '~/lib/stores/analytics';
-import { useStore } from '@nanostores/react';
-import { optOutAnalytics, optInAnalytics } from '~/lib/services/analytics';
+import { useOnboardingTour } from '~/components/onboarding/OnboardingTour';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -35,7 +33,13 @@ export default function SettingsTab() {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         };
   });
-  const analyticsEnabled = useStore(analyticsEnabledStore);
+  const { resetOnboarding, startTour } = useOnboardingTour();
+
+  const handleRestartOnboarding = () => {
+    resetOnboarding();
+    startTour();
+    toast.success('Onboarding tour restarted!');
+  };
 
   useEffect(() => {
     setCurrentTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -215,7 +219,7 @@ export default function SettingsTab() {
         </div>
       </motion.div>
 
-      {/* Analytics */}
+      {/* Onboarding Tour */}
       <motion.div
         className="bg-white dark:bg-[#0A0A0A] rounded-lg shadow-sm dark:shadow-none p-4"
         initial={{ opacity: 0, y: 20 }}
@@ -223,35 +227,23 @@ export default function SettingsTab() {
         transition={{ delay: 0.4 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <div className="i-ph:chart-line-up-fill w-4 h-4 text-purple-500" />
-          <span className="text-sm font-medium text-bolt-elements-textPrimary">Privacy & Analytics</span>
+          <div className="i-ph:rocket-launch-fill w-4 h-4 text-[#00ff88]" />
+          <span className="text-sm font-medium text-bolt-elements-textPrimary">Onboarding Tour</span>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-sm text-bolt-elements-textPrimary">Usage Analytics</span>
-              <span className="text-xs text-bolt-elements-textSecondary">
-                Help us improve by sharing anonymous usage data
-              </span>
-            </div>
-            <Switch
-              checked={analyticsEnabled}
-              onCheckedChange={async (checked) => {
-                if (checked) {
-                  await optInAnalytics();
-                } else {
-                  optOutAnalytics();
-                }
-                setAnalyticsEnabled(checked);
-                toast.success(`Usage analytics ${checked ? 'enabled' : 'disabled'}`);
-              }}
-            />
-          </div>
-          <p className="text-xs text-bolt-elements-textSecondary mt-2">
-            We never collect code content or wallet addresses. You can opt out at any time.
-          </p>
-        </div>
+        <button
+          onClick={handleRestartOnboarding}
+          className={classNames(
+            'w-full px-3 py-2 rounded-lg text-sm',
+            'bg-[#00ff88]/10 border border-[#00ff88]/50',
+            'text-[#00ff88] font-medium',
+            'hover:bg-[#00ff88]/20 transition-all duration-200',
+            'flex items-center justify-center gap-2',
+          )}
+        >
+          <div className="i-ph:play-fill" />
+          Restart Onboarding Tour
+        </button>
       </motion.div>
     </div>
   );

@@ -10,6 +10,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ClientOnly } from 'remix-utils/client-only';
 import { cssTransition, ToastContainer } from 'react-toastify';
+import { useOnboardingTour } from '~/components/onboarding/OnboardingTour';
 
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
@@ -117,6 +118,8 @@ import { initAnalytics, analytics } from './lib/services/analytics';
 
 export default function App() {
   const theme = useStore(themeStore);
+
+  useOnboardingTour();
 
   useEffect(() => {
     logStore.logSystem('Application initialized', {
