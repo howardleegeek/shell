@@ -18,6 +18,7 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
+import { scheduleAutoSave, currentProject } from './projects';
 
 const { saveAs } = fileSaver;
 
@@ -242,6 +243,31 @@ export class WorkbenchStore {
     newUnsavedFiles.delete(filePath);
 
     this.unsavedFiles.set(newUnsavedFiles);
+
+    this.#autoSaveToProject();
+  }
+
+  #autoSaveToProject() {
+    const project = currentProject.get();
+    
+    if (!project) {
+      return;
+    }
+    
+    const files = this.files.get();
+    const filesRecord: Record<string, any> = {};
+    
+    for (const [path, file] of Object.entries(files)) {
+      if (file && file.type === 'file') {
+        filesRecord[path] = {
+          type: 'file',
+          content: file.content,
+          isBinary: file.isBinary,
+        };
+      }
+    }
+    
+    scheduleAutoSave(project.id, filesRecord);
   }
 
   async saveCurrentDocument() {
