@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 import express from "express";
+import { analyzeRepair } from "./tools/auto-repair.js";
 
 const server = new McpServer({
   name: "shell-mcp-server",
@@ -15,6 +16,30 @@ server.tool("ping", "Health check for the MCP server", async () => {
     content: [{ type: "text", text: "pong" }],
   };
 });
+
+server.tool(
+  "auto_repair",
+  "Analyze test failures and generate a repair patch. Uses rule-based heuristics.",
+  {
+    project_dir: z.string(),
+    report: z.record(z.string(), z.unknown()),
+    source_files: z.array(z.string()).optional(),
+    max_patches: z.number().int().positive().optional(),
+  },
+  async ({ project_dir, report, source_files, max_patches }) => {
+    const output = analyzeRepair({
+      project_dir,
+      report,
+      source_files,
+      max_patches,
+    });
+
+    return {
+      content: [{ type: "text", text: JSON.stringify(output, null, 2) }],
+      structuredContent: output,
+    };
+  },
+);
 
 async function main() {
   const args = process.argv.slice(2);
