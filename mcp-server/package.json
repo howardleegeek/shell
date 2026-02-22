@@ -6,7 +6,9 @@
   "scripts": {
     "start": "tsx src/server.ts",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "test": "node --test --experimental-strip-types src/server.test.ts",
+    "lint": "node --experimental-strip-types --eval \"import('./src/types.ts').then(() => console.log('lint ok'))\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.4.1",

@@ -1,16 +1,10 @@
----TASK RESULT---
-task_id: S53-testnet-faucet
-status: success
-files_modified: web-ui/app/lib/stores/faucet.ts, web-ui/app/components/workbench/FaucetPanel.tsx
-tests_passed: true
-summary: Implemented real testnet faucet integration with Solana devnet airdrop, Anvil ETH transfer, and external faucet links
-issues: none
----END TASK RESULT---
----TASK RESULT---
-task_id: S01-add-a-single-deterministic-end
-status: success
-files_modified: tests/init_deterministic_e2e.sh
-tests_passed: true
-summary: Added a deterministic end-to-end regression gate validating init.sh cleanup output and idempotence.
-issues: Existing web-ui npm test cannot run in this environment because vitest is not installed.
----END TASK RESULT---
+8: ---END TASK RESULT---
+
+9: ---TASK RESULT---
+10: task_id: S54-mcp-servers-config
+11: status: success
+12: files_modified: desktop/mcp-servers.json
+13: tests_passed: true
+14: summary: Updated MCP servers configuration to use the open-source Solana MCP and evm-mcp-server backends (solana-mcp, evm-mcp-server)
+15: issues: none
+16: ---END TASK RESULT---
