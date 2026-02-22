@@ -1,9 +1,91 @@
-export type StdioServerConfig = {
-  type?: "stdio";
-  command: string;
-  args?: string[];
-  cwd?: string;
-  env?: Record<string, string>;
+import {
+  experimental_createMCPClient,
+  type ToolSet,
+  type Message,
+  type DataStreamWriter,
+  convertToCoreMessages,
+  formatDataStreamPart,
+} from 'ai';
+import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { z } from 'zod';
+import type { ToolCallAnnotation } from '~/types/context';
+import {
+  TOOL_EXECUTION_APPROVAL,
+  TOOL_EXECUTION_DENIED,
+  TOOL_EXECUTION_ERROR,
+  TOOL_NO_EXECUTE_FUNCTION,
+} from '~/utils/constants';
+import { createScopedLogger } from '~/utils/logger';
+
+const logger = createScopedLogger('mcp-service');
+
+// Default Shell MCP Server configuration (non-blocking, non-intrusive)
+// Note: only fields supported by the MCP config schema are used at runtime.
+// Extra metadata (name, description, etc.) is kept for readability here only.
+const DEFAULT_SHELL_MCP = {
+  name: 'shell-web3-tools',
+  type: 'sse',
+  // URL can be overridden by env var SHELL_MCP_URL
+  url: (process.env as any).SHELL_MCP_URL || 'http://localhost:3001/sse',
+} as const;
+
+export const stdioServerConfigSchema = z
+  .object({
+    type: z.enum(['stdio']).optional(),
+    command: z.string().min(1, 'Command cannot be empty'),
+    args: z.array(z.string()).optional(),
+    cwd: z.string().optional(),
+    env: z.record(z.string()).optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    type: 'stdio' as const,
+  }));
+export type STDIOServerConfig = z.infer<typeof stdioServerConfigSchema>;
+
+export const sseServerConfigSchema = z
+  .object({
+    type: z.enum(['sse']).optional(),
+    url: z.string().url('URL must be a valid URL format'),
+    headers: z.record(z.string()).optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    type: 'sse' as const,
+  }));
+export type SSEServerConfig = z.infer<typeof sseServerConfigSchema>;
+
+export const streamableHTTPServerConfigSchema = z
+  .object({
+    type: z.enum(['streamable-http']).optional(),
+    url: z.string().url('URL must be a valid URL format'),
+    headers: z.record(z.string()).optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    type: 'streamable-http' as const,
+  }));
+
+export type StreamableHTTPServerConfig = z.infer<typeof streamableHTTPServerConfigSchema>;
+
+export const mcpServerConfigSchema = z.union([
+  stdioServerConfigSchema,
+  sseServerConfigSchema,
+  streamableHTTPServerConfigSchema,
+]);
+export type MCPServerConfig = z.infer<typeof mcpServerConfigSchema>;
+
+export const mcpConfigSchema = z.object({
+  mcpServers: z.record(z.string(), mcpServerConfigSchema),
+});
+export type MCPConfig = z.infer<typeof mcpConfigSchema>;
+
+export type MCPClient = {
+  tools: () => Promise<ToolSet>;
+  close: () => Promise<void>;
+} & {
+  serverName: string;
 };
 
 export type SSEServerConfig = {
