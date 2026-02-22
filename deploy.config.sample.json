@@ -1,15 +1,15 @@
 {
-  // Define contracts to deploy. Each entry may be deployed by a different tool per network.
+  "_comment_contracts": "Define contracts to deploy. Each entry may be deployed by a different tool per network.",
   "contracts": [
     {
       "name": "MyToken",
-      // Path to the forge deploy script or the hardhat deploy script depending on tool
-      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy", 
-      // Optional: arguments for constructor in string form
-      "constructor_args": [] 
+      "_comment_deploy_script": "Path to the forge deploy script or the hardhat deploy script depending on tool",
+      "deploy_script": "deploy/ForgeDeploy/MyToken.sol/Deploy",
+      "_comment_constructor_args": "Optional: arguments for constructor in string form",
+      "constructor_args": []
     }
   ],
-  // Networks to deploy to. You can select multiple networks for parallel deployment.
+  "_comment_networks": "Networks to deploy to. You can select multiple networks for parallel deployment.",
   "networks": [
     {
       "name": "Sepolia",
@@ -39,6 +39,6 @@
       "gas_price_gwei": 1
     }
   ],
-  // Parallel deployment options
+  "_comment_parallel": "Parallel deployment options",
   "parallel": true
 }
