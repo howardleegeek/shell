@@ -113,19 +113,13 @@ export function listTools(): ToolSpec[] {
   return registry.slice();
 }
 
-// Auto-register the forge_build tool when the module is loaded, if available.
-try {
-  // Dynamic import-safe: avoid hard dependency during tests
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const forgeBuild = require("./tools/forge-build.ts");
-  // forge-build.ts exports by default; guard against missing export
-  if (forgeBuild?.forge_build) {
-    registerTool((forgeBuild as any).forge_build);
-  } else if (forgeBuild?.default) {
-    registerTool((forgeBuild as any).default);
-  }
-} catch {
-  // No-op if forge-build.ts is not yet compiled by TS module resolution in test env
-}
+main().catch((error) => {
+  console.error("Shell MCP Server Error:", error);
+  process.exit(1);
+});
+import { create_project } from './tools/create-project'
 
-export { registry as toolsRegistry };
+// Expose create_project tool for MCP wiring
+export const tools = {
+  create_project
+}
