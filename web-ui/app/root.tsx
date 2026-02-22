@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import type { LinksFunction } from '@remix-run/cloudflare';
+import type { LinksFunction, MetaFunction } from '@remix-run/cloudflare';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import tailwindReset from '@unocss/reset/tailwind-compat.css?url';
 import { themeStore } from './lib/stores/theme';
@@ -44,9 +44,16 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap',
   },
 ];
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: 'Shell' },
+    { name: 'description', content: 'Web3 Vibe Coding' },
+  ];
+};
 
 const inlineThemeCode = stripIndents`
   setTutorialKitTheme();
