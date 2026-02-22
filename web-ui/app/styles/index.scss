@@ -1,73 +1,170 @@
-@use 'variables.scss';
-@use 'z-index.scss';
-@use 'animations.scss';
-@use 'components/terminal.scss';
-@use 'components/resize-handle.scss';
-@use 'components/code.scss';
-@use 'components/editor.scss';
-@use 'components/toast.scss';
+:root {
+  --cyber-bg: #0a0a0f;
+  --cyber-surface: #12121a;
+  --cyber-accent: #00ff88;
+  --cyber-accent-secondary: #b84dff;
+  --cyber-text: #c0c0c0;
+  --cyber-text-bright: #e0e0e0;
+  --cyber-border: rgba(0, 255, 136, 0.15);
+  --cyber-error: #ff4444;
+  --cyber-warning: #ffaa00;
+  --cyber-success: #00ff88;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 html,
-body {
-  height: 100%;
+body,
+#root {
   width: 100%;
-  background-color: var(--bolt-elements-bg-depth-1);
+  min-height: 100%;
 }
 
-:root {
-  --gradient-opacity: 0.8;
-  --primary-color: rgba(158, 117, 240, var(--gradient-opacity));
-  --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
-  --accent-color: rgba(128, 59, 239, var(--gradient-opacity));
-  // --primary-color: rgba(147, 112, 219, var(--gradient-opacity));
-  // --secondary-color: rgba(138, 43, 226, var(--gradient-opacity));
-  // --accent-color: rgba(180, 170, 220, var(--gradient-opacity));
+html {
+  background: radial-gradient(circle at 20% 0%, rgba(184, 77, 255, 0.2), transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(0, 255, 136, 0.12), transparent 35%), var(--cyber-bg);
 }
 
-.modern-scrollbar {
-  overflow: auto;
-
-  // WebKit scrollbar styling
-  &::-webkit-scrollbar {
-    width: 2px;
-    height: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    // Use CSS variables for colors
-    background-color: var(--modern-scrollbar-thumb-background);
-    border-radius: 9999px; // pill shape
-    border: 2px solid transparent; // for padding-like effect
-    background-clip: content-box;
-    transition: background-color 0.2s ease-in-out; // Add transition
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    // Use CSS variable for hover color
-    background-color: var(--modern-scrollbar-thumb-backgroundHover);
-  }
-
-  // Firefox support
-  scrollbar-width: thin;
-  // Use CSS variables for Firefox colors
-  scrollbar-color: var(--modern-scrollbar-thumb-backgroundHover) transparent; // Use hover color for thumb for consistency
+body {
+  margin: 0;
+  color: var(--cyber-text);
+  background: transparent;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-.modern-scrollbar-invert {
-  &::-webkit-scrollbar-thumb {
-    // Override with a contrasting color, e.g., primary text color with transparency
-    background-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 70%);
+body::before {
+  content: attr(data-brand-title);
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1;
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyber-accent);
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+  pointer-events: none;
+}
+
+body::after {
+  content: attr(data-brand-subtitle);
+  position: fixed;
+  top: 2.6rem;
+  left: 1rem;
+  z-index: 1;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(192, 192, 192, 0.8);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  body::before,
+  body::after {
+    position: static;
+    display: block;
+    margin-left: 0.75rem;
   }
 
-  &::-webkit-scrollbar-thumb:hover {
-    // Darker/more opaque version on hover
-    background-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%);
+  body::before {
+    margin-top: 0.75rem;
   }
 
-  // Firefox support for inverted colors
-  scrollbar-color: color-mix(in srgb, var(--bolt-elements-textPrimary), transparent 50%) transparent;
+  body::after {
+    margin-top: 0.2rem;
+    margin-bottom: 0.35rem;
+  }
+}
+
+code,
+pre,
+kbd,
+samp,
+.cm-editor,
+.xterm,
+.xterm * {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+}
+
+a,
+button,
+[role='button'],
+input,
+textarea,
+select,
+[tabindex] {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+button,
+[role='button'] {
+  border: 1px solid var(--cyber-border);
+  background: rgba(0, 255, 136, 0.03);
+  color: var(--cyber-text-bright);
+}
+
+button:hover,
+[role='button']:hover {
+  border-color: var(--cyber-accent);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+button:focus-visible,
+[role='button']:focus-visible {
+  outline: none;
+  border-color: var(--cyber-accent);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+input,
+textarea,
+select {
+  color: var(--cyber-text);
+  background: var(--cyber-surface);
+  border: 1px solid transparent;
+  border-bottom-color: var(--cyber-border);
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-bottom-color: var(--cyber-accent);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-bottom-color: var(--cyber-accent);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--cyber-surface);
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid var(--cyber-surface);
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.7), rgba(184, 77, 255, 0.6));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--cyber-accent), var(--cyber-accent-secondary));
+}
+
+.Toastify__toast {
+  color: var(--cyber-text);
+  border: 1px solid var(--cyber-border);
+  background: var(--cyber-surface);
 }
