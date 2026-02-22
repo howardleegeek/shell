@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 import express from "express";
-import { analyzeRepair } from "./tools/auto-repair.js";
+import { registerSecurityAuditTool } from "./tools/slither-audit.js";
 
 type ToolSpec = {
   name: string;
@@ -37,6 +37,8 @@ server.tool(
     };
   },
 );
+
+registerSecurityAuditTool(server);
 
 async function main() {
   const args = process.argv.slice(2);
