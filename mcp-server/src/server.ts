@@ -99,3 +99,9 @@ main().catch((error) => {
   console.error("Shell MCP Server Error:", error);
   process.exit(1);
 });
+import { create_project } from './tools/create-project'
+
+// Expose create_project tool for MCP wiring
+export const tools = {
+  create_project
+}
