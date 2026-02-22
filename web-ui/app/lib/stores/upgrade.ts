@@ -1,5 +1,6 @@
 export type UpgradeMode = 'transparent' | 'uups' | 'beacon'
-export type UpgradeStatus = 'idle' | 'generating' | 'deploying' | 'done' | 'error'
+// Status values controlled by the wizard lifecycle
+export type UpgradeStatus = 'idle' | 'generating' | 'deploying' | 'done'
 
 export interface UpgradeState {
     upgradeMode: UpgradeMode
@@ -37,6 +38,7 @@ export const upgradeStore = {
     
     setMode(mode: UpgradeMode): void {
         this.state.upgradeMode = mode
+        this.state.generatedCode = ''
         this.notify()
     },
     
@@ -57,7 +59,6 @@ export const upgradeStore = {
     
     setError(error: string | null): void {
         this.state.error = error
-        this.state.upgradeStatus = error ? 'error' : this.state.upgradeStatus
         this.notify()
     },
     
@@ -97,6 +98,24 @@ export const upgradeStore = {
         } catch (e) {
             const error = e instanceof Error ? e.message : 'Unknown error'
             this.setError(error)
+            this.setStatus('idle')
+            throw e
+        }
+    },
+
+    async deploy(onDeploy?: () => void | Promise<void>): Promise<void> {
+        this.setStatus('deploying')
+        this.setError(null)
+
+        try {
+            if (onDeploy) {
+                await onDeploy()
+            }
+            this.setStatus('done')
+        } catch (e) {
+            const error = e instanceof Error ? e.message : 'Failed to deploy upgrade'
+            this.setError(error)
+            this.setStatus('idle')
             throw e
         }
     },
