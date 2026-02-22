@@ -5,11 +5,12 @@ files_modified: mcp-server/src/tools/read-report.ts, mcp-server/src/tools/read-r
 tests_passed: true
 summary: Implemented read_report MCP tool with report auto-detection, rule-based failure classification, no-report hint, and >10MB truncation; added automated tests.
 issues: none
----END TASK RESULT------TASK RESULT---
-task_id: ipfs-arweave-deploy
+---END TASK RESULT---
+---TASK RESULT---
+task_id: security-audit-panel
 status: success
-files_modified: web-ui/app/lib/stores/ipfs.ts, web-ui/app/components/workbench/IpfsPanel.tsx, web-ui/app/components/workbench/EditorPanel.tsx, web-ui/app/lib/stores/ipfs.test.ts
+files_modified: web-ui/app/components/workbench/AuditButton.tsx, web-ui/tests/audit-runner.test.js
 tests_passed: true
-summary: Added IPFS/Arweave deploy panel with Pinata/Bundlr uploads, persisted upload history, and API key settings integration
-issues: automated test runner is a placeholder ("no tests configured") so new unit tests were added but not executed in CI
+summary: Hardened EVM Slither audit flow to always emit reports/audit.evm.slither.json and expanded audit-runner parser/sorting coverage
+issues: none
 ---END TASK RESULT---
