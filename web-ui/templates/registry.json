@@ -1,0 +1,32 @@
+{
+  "templates": {
+    "evm": {},
+    "solana": {},
+    "move": {
+      "coin": {
+        "name": "Move Coin",
+        "description": "Move coin module with mint and burn",
+        "icon": "🪙",
+        "promptTemplate": "Create a Sui Move coin module with mint and burn functions"
+      },
+      "nft": {
+        "name": "Move NFT Collection",
+        "description": "Move NFT collection with minting",
+        "icon": "🎨",
+        "promptTemplate": "Create an Aptos Move NFT collection with minting"
+      },
+      "marketplace": {
+        "name": "Move Marketplace",
+        "description": "Move-based marketplace",
+        "icon": "🛒",
+        "promptTemplate": "Create a Move marketplace with listing and purchasing flow"
+      },
+      "staking": {
+        "name": "Move Staking",
+        "description": "Move staking contract",
+        "icon": "🎛️",
+        "promptTemplate": "Create a Move staking contract with deposit/withdraw"
+      }
+    }
+  }
+}

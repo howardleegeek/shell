@@ -46,7 +46,7 @@ export const TemplateCard: React.FC<{ template: TemplateItem; onUse: () => void 
 }
 
 export const TemplateGallery: React.FC = () => {
-  const [tab, setTab] = useState<'SVM' | 'EVM'>('SVM')
+  const [tab, setTab] = useState<'SVM' | 'EVM' | 'Move'>('SVM')
   const [query, setQuery] = useState('')
   const [introVisible, setIntroVisible] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -59,36 +59,48 @@ export const TemplateGallery: React.FC = () => {
     // If registry.json uses a nested structure
     const reg: any = registryRaw
     const flat: TemplateItem[] = []
-    if (reg && typeof reg === 'object') {
-      if (reg.templates && typeof reg.templates === 'object') {
-        const evm = reg.templates.evm || {}
-        Object.entries(evm).forEach(([id, data]: any) => {
-          flat.push({
-            id,
-            name: data.name,
-            description: data.description,
-            chain: 'EVM',
-            category: 'contract',
-            icon: data.icon || '',
-            promptTemplate: data.promptTemplate || '',
+        if (reg && typeof reg === 'object') {
+          if (reg.templates && typeof reg.templates === 'object') {
+          const evm = reg.templates.evm || {}
+          Object.entries(evm).forEach(([id, data]: any) => {
+            flat.push({
+              id,
+              name: data.name,
+              description: data.description,
+              chain: 'EVM',
+              category: 'contract',
+              icon: data.icon || '',
+              promptTemplate: data.promptTemplate || '',
+            })
           })
-        })
         const sol = reg.templates.solana || {}
-        Object.entries(sol).forEach(([id, data]: any) => {
+          Object.entries(sol).forEach(([id, data]: any) => {
+            flat.push({
+              id,
+              name: data.name,
+              description: data.description,
+              chain: 'SVM',
+              category: 'contract',
+              icon: data.icon || '',
+              promptTemplate: data.promptTemplate || '',
+            })
+          })
+        const move = reg.templates.move || {}
+        Object.entries(move).forEach(([id, data]: any) => {
           flat.push({
             id,
             name: data.name,
             description: data.description,
-            chain: 'SVM',
+            chain: 'Move',
             category: 'contract',
             icon: data.icon || '',
             promptTemplate: data.promptTemplate || '',
           })
         })
-      } else if (Array.isArray(reg)) {
-        reg.forEach((t: any) => flat.push(t))
+        } else if (Array.isArray(reg)) {
+          reg.forEach((t: any) => flat.push(t))
+        }
       }
-    }
     // If registry.json is already a flat array, return as-is
     if (flat.length > 0) return flat
     // Fallback to attempting to coerce as a flat array
@@ -168,6 +180,7 @@ export const TemplateGallery: React.FC = () => {
       <div style={toolbarStyle}>
         <button className="tab-svm" style={tab === 'SVM' ? activeTabStyle : tabButtonStyle} onClick={() => setTab('SVM')}>SVM</button>
         <button className="tab-evm" style={tab === 'EVM' ? activeTabStyle : tabButtonStyle} onClick={() => setTab('EVM')}>EVM</button>
+        <button className="tab-move" style={tab === 'Move' ? activeTabStyle : tabButtonStyle} onClick={() => setTab('Move')}>Move</button>
         <input placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} style={inputStyle} />
       </div>
       <div style={gridStyle}>
