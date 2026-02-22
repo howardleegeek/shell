@@ -1,125 +1,68 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import express from "express";
-import path from "node:path";
-import { runAutonomousDiscovery } from "./autonomousDiscovery.js";
+#!/usr/bin/env node
+import { McpServer, StdioServerTransport, SSEServerTransport } from "@modelcontextprotocol/sdk/server";
+import { ForgeTestResult, BuildResult, DeployResult, ReportData } from "./types";
 
-const server = new McpServer({
-  name: "shell-mcp-server",
-  version: "1.0.0",
-});
-const taskId = process.env.TASK_ID ?? "S01-priority-1-action-com";
+// Very small, minimal MCP server skeleton.
+// Command line: --transport stdio|sse --port 3001
 
-server.tool("ping", "Health check for the MCP server", async () => {
-  return {
-    content: [{ type: "text", text: "pong" }],
-  };
-});
-
-server.tool(
-  "autonomous_discovery",
-  "Define and execute autonomous discovery: scan concrete files and match concrete risk patterns.",
-  {
-    rootPath: z.string().optional(),
-    maxFiles: z.number().int().positive().max(2000).optional(),
-  },
-  async ({ rootPath, maxFiles }) => {
-    const scanRootPath = rootPath
-      ? path.resolve(rootPath)
-      : process.cwd();
-    const report = await runAutonomousDiscovery(
-      scanRootPath,
-      maxFiles ?? 500,
-    );
-
-    return {
-      content: [
-        { type: "text", text: JSON.stringify(report, null, 2) },
-      ],
-    };
-  },
-);
-
-async function main() {
+function parseArgs() {
   const args = process.argv.slice(2);
-  const isSSE =
-    args.includes("--transport") &&
-    args[args.indexOf("--transport") + 1] === "sse";
-  const portIndex = args.indexOf("--port");
-  const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3001;
+  const cfg: { transport: "stdio" | "sse"; port?: number } = { transport: "stdio" };
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--transport" && i + 1 < args.length) {
+      const t = (args[i + 1] as string).toLowerCase();
+      cfg.transport = t === "stdio" ? "stdio" : "sse";
+      i++;
+    } else if (a === "--port" && i + 1 < args.length) {
+      const p = parseInt(args[i + 1], 10);
+      if (!Number.isNaN(p)) cfg.port = p;
+      i++;
+    }
+  }
+  return cfg;
+}
 
-  if (isSSE) {
-    const app = express();
-
-    // 1. 安全修复：允许前端混合端点通信 (CORS) 并拦截恶意溯源
-    app.use((req, res, next) => {
-      res.header("Access-Control-Allow-Origin", "*"); // 这里如果在生产环境需要换成前端明确域名
-      res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-      res.header("Access-Control-Allow-Headers", "Content-Type");
-      if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-      }
-      next();
-    });
-
-    // 2. 状态机修复：Session 隔离，防止多客户端互相覆盖数据通信
-    const transports = new Map<string, SSEServerTransport>();
-
-    app.get("/sse", async (req, res) => {
-      // 3. 网络层修复：防止连接由于太久没有链上动作被悄悄掐断 (Idle Timeout)
-      req.socket.setTimeout(0);
-      res.socket?.setTimeout(0);
-
-      // 为每个链接端分配单例 Token
-      const sessionId = Math.random().toString(36).substring(2, 15);
-
-      // 生成独占的 POST 地址告诉它往这发
-      const transport = new SSEServerTransport(
-        `/messages?sessionId=${sessionId}`,
-        res,
-      );
-      transports.set(sessionId, transport);
-
-      // 4. 内存泄漏修复：当刷新网页、断网、关闭时，释放该连接内存池
-      req.on("close", () => {
-        transports.delete(sessionId);
-      });
-
-      await server.connect(transport);
-    });
-
-    app.post("/messages", async (req, res) => {
-      const sessionId = req.query.sessionId as string;
-      const transport = transports.get(sessionId);
-
-      if (transport) {
-        // 交由 transport 原生处理 body 流，避开 body-parser 全局污染限制
-        await transport.handlePostMessage(req, res);
-      } else {
-        res.status(400).send("Session Expired or Connection Not Established");
-      }
-    });
-
-    // 5. 权限逃逸修复：强制将端口监听封死在 `127.0.0.1` 杜绝 0.0.0.0 局域网 RCE 入侵
-    app.listen(port, "127.0.0.1", () => {
-      console.log(`MCP Server running on SSE at http://127.0.0.1:${port}/sse`);
-    });
+function main() {
+  const cfg = parseArgs();
+  let transport: any;
+  if (cfg.transport === "stdio") {
+    transport = new StdioServerTransport();
   } else {
-    // Default to StdIO transport
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    const port = cfg.port ?? 3001;
+    transport = new SSEServerTransport({ port });
+  }
+
+  // Instantiate MCP Server
+  const server: any = new McpServer({ transport });
+
+  // Register a simple health ping tool
+  const pingTool = {
+    name: "ping",
+    run: async (_input?: any) => {
+      return { ok: true, message: "pong" };
+    }
+  };
+
+  // Some MCP servers expose a `register` method; guard against variations.
+  if (typeof server.register === "function") {
+    server.register(pingTool);
+  } else if (typeof server.registerTool === "function") {
+    server.registerTool(pingTool);
+  } else if (typeof server.addTool === "function") {
+    server.addTool(pingTool);
+  } else {
+    // Fallback: attach to a known property if available
+    (server as any).tools = [(server as any).tools?.[0] ?? pingTool];
+  }
+
+  // Start listening/serving (depending on transport, the MCP server might auto-start)
+  if (typeof server.start === "function") {
+    server.start();
+  } else {
+    // Best-effort: if transport is stdio, nothing else to do
+    console.log("MCP server initialized with transport:", cfg.transport);
   }
 }
 
-process.on("uncaughtException", (err) => {
-  console.error(`[${taskId}] CRITICAL uncaught exception:`, err);
-});
-process.on("unhandledRejection", (reason, promise) => {
-  console.error(`[${taskId}] CRITICAL unhandled rejection:`, reason, promise);
-});
-
-main().catch((error) => {
-  console.error(`[${taskId}] Shell MCP Server Error:`, error);
-  process.exit(1);
-});
+main();

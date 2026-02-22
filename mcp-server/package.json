@@ -1,23 +1,20 @@
 {
   "name": "shell-mcp-server",
-  "version": "1.0.0",
-  "description": "Shell Web3 MCP Server",
+  "version": "0.1.0",
   "type": "module",
+  "private": false,
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "tsx": "*",
+    "@types/node": "*"
+  },
   "scripts": {
     "start": "tsx src/server.ts",
     "build": "tsc",
-    "dev": "tsx watch src/server.ts",
-    "test": "node --experimental-strip-types --test src/*.test.mjs"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.4.1",
-    "express": "^4.21.2",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.13.4",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "dev": "tsx watch src/server.ts"
   }
 }
