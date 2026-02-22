@@ -2,12 +2,17 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "rootDir": ".",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@modelcontextprotocol/sdk": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/types.d.ts"],
+      "@modelcontextprotocol/sdk/server/*": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/server/*"]
+    }
   },
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
