@@ -18,7 +18,7 @@ class StripeClient {
 
   // Create a mock checkout session for a given plan
   async createCheckoutSession(plan: Plan): Promise<CheckoutSession> {
-    const id = `cs_${plan}_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+    const id = `cs_${plan}_${crypto.randomUUID()}`
     this.sessions.set(id, plan)
     return {
       id,
@@ -42,6 +42,11 @@ class StripeClient {
     return () => {
       this.listeners = this.listeners.filter(l => l !== cb)
     }
+  }
+
+  resetForTests() {
+    this.sessions.clear()
+    this.listeners = []
   }
 }
 

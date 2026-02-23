@@ -1,6 +1,6 @@
 'use strict';
 
-const { parseGasReport, parseComputeReport, colorForGas, generateAiSuggestions } = require('../web-ui/app/lib/gasReportParser.js');
+import { parseGasReport, parseComputeReport, colorForGas, generateAiSuggestions } from '../../web-ui/app/lib/gas-report-parser.ts';
 
 describe('gasReportParser', () => {
   test('colorForGas should produce green for low avg', () => {

@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { vi } from 'vitest'
 import EnsResolver from '../EnsResolver'
 
 // Simple mock provider implementing the subset used by the tests
@@ -46,8 +47,8 @@ describe('EnsResolver (.eth)', () => {
 
     // Expect address to be shown
     await waitFor(() => {
-      expect(screen.getByText(/Address:/i)).toBeInTheDocument()
-      expect(screen.getByText(/0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF/i)).toBeInTheDocument()
+      expect(screen.getByText(/Address:/i)).toBeTruthy()
+      expect(screen.getByText(/0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF/i)).toBeTruthy()
     })
 
     // Clean up test provider
@@ -61,14 +62,18 @@ describe('EnsResolver (.eth)', () => {
     window.__ENS_RESOLVER_TEST_PROVIDER__ = createMockProvider()
 
     // Mock clipboard
-    const writeTextSpy = jest.spyOn(navigator.clipboard, 'writeText').mockImplementation(async () => {})
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn() },
+      configurable: true,
+    })
+    const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(async () => {})
 
     render(<EnsResolver />)
     const input = screen.getByPlaceholderText('0x... or example.eth or example.sol')
     fireEvent.change(input, { target: { value: 'alice.eth' } })
     fireEvent.click(screen.getByText('Resolve .eth'))
     await waitFor(() => {
-      expect(screen.getByText(/Address:/i)).toBeInTheDocument()
+      expect(screen.getByText(/Address:/i)).toBeTruthy()
     })
     // Click copy button
     const copyBtn = screen.getByText('Copy address')
