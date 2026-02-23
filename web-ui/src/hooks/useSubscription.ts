@@ -65,7 +65,7 @@ export const SubscriptionProvider: React.FC<{ children?: React.ReactNode }> = ({
   }
 
   const value = useMemo(() => ({ state, upgrade }), [state, upgrade])
-  return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>
+  return React.createElement(SubscriptionContext.Provider, { value }, children)
 }
 
 export const useSubscription = () => {

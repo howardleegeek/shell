@@ -190,7 +190,7 @@ export function installPlugin(pluginId: string): boolean {
   if (pluginIndex !== -1) {
     currentState.availablePlugins[pluginIndex] = {
       ...currentState.availablePlugins[pluginIndex],
-State.availablePlugins[pluginIndex].download      downloads: currents + 1,
+      downloads: currentState.availablePlugins[pluginIndex].downloads + 1,
     };
   }
 

@@ -30,10 +30,13 @@ const MigrationWizard: React.FC = () => {
   const generateSkeleton = (src: string, dst: string, code: string): string => {
     const short = code?.trim().slice(0, 120) ?? '';
     if (src === 'solidity' && dst === 'solidity-to-rust') {
-      return `// AI-generated Rust/Anchor skeleton from Solidity contract\n// Source length: ${code.length} chars\n\npub mod migrated {
+      return `// AI-generated Rust/Anchor skeleton from Solidity contract
+// Source length: ${code.length} chars
+
+pub mod migrated {
   // This is a scaffold; replace with real translation logic.
   pub fn migrate(input: &[u8]) -> Result<(), String> { Ok(()) }
-}
+}`;
     }
     // Generic fallback skeleton
     return `// Migration skeleton: ${src} -> ${dst}\n// Contract preview: ${short}`;
