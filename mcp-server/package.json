@@ -7,9 +7,12 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.json"
   },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0"
+  },
   "devDependencies": {
-    "vitest": "^2.20.0",
+    "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^2.1.9"
   }
 }
