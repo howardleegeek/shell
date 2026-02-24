@@ -8,6 +8,11 @@ describe('ContractSizeBar utilities', () => {
     expect(colorForSize(25 * 1024, 'evm')).toBe('red') // 25KB
   })
 
+  it('evm boundary at 24,576 bytes (24.576 KB)', () => {
+    expect(colorForSize(24_576, 'evm')).toBe('yellow')
+    expect(colorForSize(24_577, 'evm')).toBe('red')
+  })
+
   it('evm size label formatting', () => {
     // 12800 bytes -> 12.5 KB; 24KB limit; expect 52% rounded
     expect(formatSizeBarLabel(12800, 'evm')).toBe('12.5KB / 24KB (52%)')

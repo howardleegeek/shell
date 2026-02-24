@@ -1,9 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { stripeClient, type Plan } from '../src/lib/billing/stripe-client'
 
 describe('StripeClient mock', () => {
-  afterEach(() => {
-    // no global state to reset in this mock, but keep hook clean
+  beforeEach(() => {
+    stripeClient.resetForTests()
   })
 
   it('creates and completes a checkout session and notifies listener', () => {
