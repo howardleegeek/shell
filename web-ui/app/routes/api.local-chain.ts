@@ -58,20 +58,64 @@ function startEVM(): number | null {
   }
 }
 
-function stopProcess(pid: number | null): boolean {
+async function stopProcess(pid: number | null): Promise<boolean> {
   if (!pid) return false;
   try {
     // Try graceful termination first
     process.kill(pid, 'SIGTERM');
   } catch {
-    // Ignore if already terminated
+    // If the process is already gone, consider it stopped
+    return true;
   }
-  return true;
+  // Wait up to 3 seconds for the process to exit gracefully
+  const MAX_MS = 3000;
+  const INTERVAL_MS = 100;
+  const start = Date.now();
+  while (Date.now() - start < MAX_MS) {
+    try {
+      // poll if still alive
+      process.kill(pid, 0 as any);
+    } catch {
+      // process no longer alive
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, INTERVAL_MS));
+  }
+  // If still alive, force kill
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch {
+    // ignore
+  }
+  // Final check
+  try {
+    process.kill(pid, 0 as any);
+    // Still alive; give up
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 export async function loader() {
   try {
     const status = readStatus();
+    // Verify that tracked PIDs are actually alive; otherwise reset
+    const isAlive = (pid: number | null) => {
+      if (!pid) return false
+      try {
+        process.kill(pid as number, 0 as any)
+        return true
+      } catch {
+        return false
+      }
+    }
+    if (status.svm?.pid && !isAlive(status.svm.pid)) {
+      status.svm = { state: 'stopped', pid: null }
+    }
+    if (status.evm?.pid && !isAlive(status.evm.pid)) {
+      status.evm = { state: 'stopped', pid: null }
+    }
     return json({ status });
   } catch (e) {
     return json({ status: { svm: { state: 'unknown' }, evm: { state: 'unknown' } } }, { status: 500 });
@@ -120,7 +164,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (action === 'stop-svm') {
       const pid = status.svm?.pid ?? null;
-      if (stopProcess(pid)) {
+      if (await stopProcess(pid)) {
         status.svm = { state: 'stopped', pid: null };
         writeStatus(status);
         return json({ ok: true, status });
@@ -130,7 +174,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (action === 'stop-evm') {
       const pid = status.evm?.pid ?? null;
-      if (stopProcess(pid)) {
+      if (await stopProcess(pid)) {
         status.evm = { state: 'stopped', pid: null };
         writeStatus(status);
         return json({ ok: true, status });
