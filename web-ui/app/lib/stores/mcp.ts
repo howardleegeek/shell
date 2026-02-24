@@ -3,7 +3,8 @@ import type { MCPConfig, MCPServerTools } from '~/lib/services/mcpService';
 import { buildChainMcpConfig } from '~/lib/services/chainMcpConfig';
 import type { ChainType } from '~/lib/stores/chain';
 
-const MCP_SETTINGS_KEY = 'mcp_settings';
+const MCP_CONFIG_KEY = 'mcp_config';
+const MCP_CONFIG_KEY_LEGACY = 'mcp_settings';
 const isBrowser = typeof window !== 'undefined';
 
 type MCPSettings = {
@@ -43,7 +44,16 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
     }
 
     if (isBrowser) {
-      const savedConfig = localStorage.getItem(MCP_SETTINGS_KEY);
+      let savedConfig = localStorage.getItem(MCP_CONFIG_KEY);
+
+      if (!savedConfig) {
+        const legacyConfig = localStorage.getItem(MCP_CONFIG_KEY_LEGACY);
+        if (legacyConfig) {
+          savedConfig = legacyConfig;
+          localStorage.removeItem(MCP_CONFIG_KEY_LEGACY);
+          localStorage.setItem(MCP_CONFIG_KEY, legacyConfig);
+        }
+      }
 
       if (savedConfig) {
         try {
@@ -57,7 +67,7 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
           }));
         }
       } else {
-        localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(defaultSettings));
+        localStorage.setItem(MCP_CONFIG_KEY, JSON.stringify(defaultSettings));
         const serverTools = await updateServerConfig(defaultSettings.mcpConfig);
         set(() => ({ settings: defaultSettings, serverTools }));
       }
@@ -76,7 +86,7 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
       const serverTools = await updateServerConfig(newSettings.mcpConfig);
 
       if (isBrowser) {
-        localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(newSettings));
+        localStorage.setItem(MCP_CONFIG_KEY, JSON.stringify(newSettings));
       }
 
       set(() => ({ settings: newSettings, serverTools }));
