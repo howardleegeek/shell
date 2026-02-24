@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {Script, console2} from "forge-std/Script.sol";
+import {${CONTRACT_NAME}} from "../src/${CONTRACT_NAME}.sol";
+
+contract InteractionScript is Script {
+    function run() external {
+        address target = vm.envAddress("TARGET_CONTRACT");
+        ${CONTRACT_NAME} contractInstance = ${CONTRACT_NAME}(target);
+
+        vm.startBroadcast();
+        ${INTERACTION_CALL};
+        vm.stopBroadcast();
+
+        console2.log("Interaction executed on", target);
+    }
+}

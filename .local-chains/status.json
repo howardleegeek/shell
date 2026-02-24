@@ -1,0 +1,10 @@
+{
+  "svm": {
+    "state": "stopped",
+    "pid": null
+  },
+  "evm": {
+    "state": "stopped",
+    "pid": null
+  }
+}

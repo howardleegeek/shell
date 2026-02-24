@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <!-- Content Security Policy to prevent XSS and data exfiltration -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'" />
+  <title>Shell Web UI - bolt.diy fork</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .panel { border: 1px solid #ddd; padding: 16px; border-radius: 8px; max-width: 800px; }
+      .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+      label { width: 120px; font-weight: bold; }
+      select, button { padding: 8px 12px; font-size: 14px; }
+      #output { white-space: pre-wrap; background: #f7f7f7; padding: 12px; border-radius: 6px; min-height: 120px; }
+      .status { margin-top: 12px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h1>bolt.diy fork</h1>
+    <div class="panel" id="deployPanel">
+      <div class="row">
+        <label for="chain">Chain</label>
+        <select id="chain">
+          <option value="solana">Solana (SVM)</option>
+          <option value="evm">Ethereum-compatible (EVM)</option>
+        </select>
+      </div>
+      <div class="row" id="networkRowSolana">
+        <label for="networkSolana">Network</label>
+        <select id="networkSolana">
+          <option value="localhost">localhost</option>
+          <option value="devnet">devnet</option>
+          <option value="testnet">testnet</option>
+        </select>
+      </div>
+      <div class="row" id="networkRowEVM" style="display:none;">
+        <label for="networkEVM">Network</label>
+        <select id="networkEVM">
+          <option value="anvil">anvil (localhost)</option>
+          <option value="sepolia">sepolia</option>
+          <option value="base-sepolia">base-sepolia</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="deployBtn">Deploy</button>
+        <span class="status" id="status">Idle</span>
+      </div>
+      <div class="row" style="flex:1;">
+        <div id="output" aria-live="polite">Awaiting deployment...</div>
+      </div>
+    </div>
+    <script>
+      const chainEl = document.getElementById('chain');
+      const deployBtn = document.getElementById('deployBtn');
+      const statusEl = document.getElementById('status');
+      const outputEl = document.getElementById('output');
+      const networkRowSolana = document.getElementById('networkRowSolana');
+      const networkRowEVM = document.getElementById('networkRowEVM');
+      const networkSolana = document.getElementById('networkSolana');
+      const networkEVM = document.getElementById('networkEVM');
+
+      function updateUIForChain() {
+        if (chainEl.value === 'solana') {
+          networkRowSolana.style.display = 'flex';
+          networkRowEVM.style.display = 'none';
+        } else {
+          networkRowSolana.style.display = 'none';
+          networkRowEVM.style.display = 'flex';
+        }
+        outputEl.textContent = '';
+        statusEl.textContent = 'Idle';
+      }
+
+      chainEl.addEventListener('change', updateUIForChain);
+      updateUIForChain();
+
+      deployBtn.addEventListener('click', async () => {
+        const chain = chainEl.value;
+        const network = chain === 'solana' ? networkSolana.value : networkEVM.value;
+        statusEl.textContent = 'Deploying...';
+        outputEl.textContent = 'Starting deployment...';
+        try {
+          const resp = await fetch('/deploy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chain, network })
+          });
+          const data = await resp.json();
+          if (data && data.ok) {
+            statusEl.textContent = 'Deployed → ' + (data.details?.address || data.details?.programId || '');
+            outputEl.textContent = JSON.stringify(data, null, 2);
+          } else {
+            statusEl.textContent = 'Deployment failed';
+            outputEl.textContent = JSON.stringify(data, null, 2);
+          }
+        } catch (e) {
+          statusEl.textContent = 'Error';
+          outputEl.textContent = 'Error: ' + (e && e.message ? e.message : String(e));
+        }
+      });
+    </script>
+  </body>
+  </html>

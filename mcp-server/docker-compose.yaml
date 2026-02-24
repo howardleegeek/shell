@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  mcp-server:
+    build: .
+    ports:
+      - "3001:3001"   # MCP Server (SSE)
+      - "8545:8545"   # Anvil RPC
+    volumes:
+      - ./projects:/app/projects  # User projects mount
+    environment:
+      - NODE_ENV=production
+      - ANVIL_BLOCK_TIME=1
+    mem_limit: 2g

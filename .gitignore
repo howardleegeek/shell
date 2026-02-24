@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+/lib/
+
+# Build
+dist/
+out/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache
+.cache/
+
+# OpenCode local config (causes crashes on cluster nodes)
+.opencode/

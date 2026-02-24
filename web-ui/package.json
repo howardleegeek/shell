@@ -1,0 +1,17 @@
+{
+  "name": "shell-web-ui",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^1.60.0"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^28.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

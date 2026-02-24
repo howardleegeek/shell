@@ -1,0 +1,1 @@
+{"findings":[{"type":"Critical","location":"src/index.ts:10","description":"RCE risk"}]}

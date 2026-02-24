@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {Script, console2} from "forge-std/Script.sol";
+import {${CONTRACT_NAME}} from "../src/${CONTRACT_NAME}.sol";
+
+contract DeployScript is Script {
+    function run() external returns (${CONTRACT_NAME} deployed) {
+        vm.startBroadcast();
+        deployed = new ${CONTRACT_NAME}(${CONSTRUCTOR_ARGS});
+        vm.stopBroadcast();
+
+        console2.log("${CONTRACT_NAME} deployed at", address(deployed));
+    }
+}

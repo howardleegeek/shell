@@ -1,0 +1,17 @@
+---TASK RESULT---
+task_id: S74-read-report-tool
+status: success
+files_modified: mcp-server/src/tools/read-report.ts, mcp-server/src/tools/read-report.test.ts, mcp-server/src/types/read-report.ts
+tests_passed: true
+summary: Implemented read_report MCP tool with report auto-detection, rule-based failure classification, no-report hint, and >10MB truncation; added automated tests.
+issues: none
+---END TASK RESULT---
+
+---TASK RESULT---
+task_id: S40-abi-idl-manager
+status: success
+files_modified: web-ui/app/lib/abi-manager.js, web-ui/app/components/workbench/AbiIdlManager.jsx, web-ui/tests/abi-manager.test.mjs, web-ui/package.json
+tests_passed: true
+summary: Added ABI/IDL manager core with WhatsABI integration hook, ABI viewer/diff/export, contract-address ABI fetch, and executable tests.
+issues: none
+---END TASK RESULT---
