@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Combined runner CLI: build/test (S101) + detect/list-reports/read-report/deploy (S105)
+// Combined runner CLI: build/test (S101) + detect/list-reports/read-report/deploy (S105) + S112 fixes
 "use strict";
 
 const { spawnSync } = require('child_process');
-const { join, resolve } = require('path');
+const { join, resolve, dirname } = require('path');
 const { mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync, statSync } = require('fs');
 
 function printHelp() {
@@ -62,7 +62,7 @@ function listReports(projectPath) {
   } catch { return []; }
 }
 
-function readReport(projectPath, reportName) {
+function readReportFile(projectPath, reportName) {
   const file = join(resolve(projectPath), 'reports', reportName);
   if (!existsSync(file)) return {};
   try {
@@ -71,30 +71,35 @@ function readReport(projectPath, reportName) {
   } catch { return {}; }
 }
 
+function writeReport(projectPath, reportName, payload) {
+  const reportPath = join(projectPath, 'reports', reportName);
+  ensureDir(dirname(reportPath));
+  writeFileSync(reportPath, JSON.stringify(payload, null, 2), 'utf8');
+}
+
 function runBuildTest(command, opts) {
   const chain = opts.chain;
   const projectPath = opts.project || process.cwd();
-  let binary = null;
-  let runnerName = null;
-  if (chain === 'solana') {
-    binary = 'anchor';
-    runnerName = 'anchor';
-  } else if (chain === 'evm') {
-    binary = 'forge';
-    runnerName = 'forge';
-  } else {
-    console.error('Unknown chain:', chain);
-    process.exit(1);
+  let binary = opts.runner || null;
+  let runnerName = binary;
+  if (!binary) {
+    if (chain === 'solana') { binary = 'anchor'; runnerName = 'anchor'; }
+    else if (chain === 'evm') { binary = 'forge'; runnerName = 'forge'; }
+    else {
+      console.error('Unknown chain:', chain);
+      process.exit(1);
+    }
   }
 
   const reportsDir = join(projectPath, 'reports');
   ensureDir(reportsDir);
 
-  const res = spawnSync(binary, [], { env: process.env, encoding: 'utf8' });
+  const res = spawnSync(binary, [], { cwd: projectPath, env: process.env, encoding: 'utf8' });
   const ok = (res.status === 0);
   const report = { ok: !!ok, chain: chain, runner: runnerName };
-  const reportPath = join(reportsDir, `${command}.${chain}.${runnerName}.json`);
-  writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
+  if (res.stdout) report.stdout = res.stdout;
+  if (res.stderr) report.stderr = res.stderr;
+  writeReport(projectPath, `${command}.${chain}.${runnerName}.json`, report);
 
   if (command === 'build') process.exit(0);
   if (res.error) process.exit(1);
@@ -130,7 +135,7 @@ function main() {
   if (command === 'read-report') {
     const projectPath = opts.project || process.cwd();
     const reportName = args[args.length - 1] || '';
-    const data = readReport(projectPath, reportName);
+    const data = readReportFile(projectPath, reportName);
     console.log(JSON.stringify(data));
     return;
   }
