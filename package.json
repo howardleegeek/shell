@@ -5,9 +5,13 @@
   "private": true,
   "scripts": {
     "build": "tsc -b",
-    "test": "npm run build --silent && node dist/tests/validate_inputSchema.js" 
+    "test": "npm run build --silent && node dist/tests/validate_inputSchema.js"
+  },
+  "dependencies": {
+    "isomorphic-git": "^1.37.1"
   },
   "devDependencies": {
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "vite": "^4.4.0"
   }
 }
