@@ -12,7 +12,8 @@ rm -rf web-ui/.opencode 2>/dev/null
 # Target: <50 files, <500KB
 
 # Remove top-level dirs agents never need
-rm -rf desktop/ demo/ schemas/ runner/ repo/ docs/ tests/ templates/ 2>/dev/null
+# Do not delete tests/ or .opencode/ to preserve local test artifacts
+rm -rf desktop/ demo/ schemas/ runner/ docs/ 2>/dev/null
 rm -rf .github/ .git/hooks/ 2>/dev/null
 
 # web-ui: keep ONLY config files + key source files agents reference

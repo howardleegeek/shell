@@ -78,7 +78,7 @@ export type MCPServerConfig = z.infer<typeof mcpServerConfigSchema>;
 
 export const mcpConfigSchema = z.object({
   mcpServers: z.record(z.string(), mcpServerConfigSchema),
-});
+}).strict();
 export type MCPConfig = z.infer<typeof mcpConfigSchema>;
 
 export type MCPClient = {
