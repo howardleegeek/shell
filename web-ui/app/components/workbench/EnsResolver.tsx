@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
 
-type EnsResolverRecord = {
-  getText?: (key: string) => Promise<string | null>
-}
+import {
+  type EnsProvider,
+  fetchEnsTextRecords,
+  normalizeResolverError,
+  requireProvider,
+  resolveSnsAddress,
+  sanitizeAvatarUrl,
+} from './ensResolver'
 
-type EnsProvider = {
-  resolveName?: (name: string) => Promise<string | null>
-  lookupAddress?: (address: string) => Promise<string | null>
-  getResolver?: (name: string) => Promise<EnsResolverRecord | null>
-}
+export { sanitizeAvatarUrl } from './ensResolver'
 
 declare global {
   interface Window {
@@ -18,18 +19,6 @@ declare global {
 
 function getProvider(): EnsProvider | null {
   return window.__ENS_RESOLVER_TEST_PROVIDER__ ?? null
-}
-
-export function sanitizeAvatarUrl(rawUrl: string | null | undefined): string | null {
-  if (!rawUrl) return null
-
-  try {
-    const parsed = new URL(rawUrl)
-    if (parsed.protocol !== 'https:') return null
-    return parsed.toString()
-  } catch {
-    return null
-  }
 }
 
 export default function EnsResolver(): React.ReactElement {
@@ -51,45 +40,56 @@ export default function EnsResolver(): React.ReactElement {
       return
     }
 
-    const provider = getProvider()
-    if (!provider) {
-      setError('Provider unavailable.')
-      return
-    }
+    try {
+      const provider = requireProvider(getProvider())
 
-    if (value.toLowerCase().endsWith('.eth')) {
-      if (!provider.resolveName) {
-        setError('Resolver unavailable.')
+      if (value.toLowerCase().endsWith('.eth')) {
+        if (!provider.resolveName) {
+          setError('Resolver unavailable.')
+          return
+        }
+
+        const address = await provider.resolveName(value)
+        if (!address) {
+          setError('Name not found.')
+          return
+        }
+
+        setResolvedAddress(address)
+
+        if (provider.getResolver) {
+          const resolver = await provider.getResolver(value)
+          const textRecords = await fetchEnsTextRecords(resolver)
+          setAvatarUrl(sanitizeAvatarUrl(textRecords.avatar))
+        }
         return
       }
 
-      const address = await provider.resolveName(value)
-      if (!address) {
-        setError('Name not found.')
+      if (value.toLowerCase().endsWith('.sol')) {
+        const address = await resolveSnsAddress(value, provider)
+        if (!address) {
+          setError('Name not found.')
+          return
+        }
+
+        setResolvedAddress(address)
         return
       }
 
-      setResolvedAddress(address)
-
-      if (provider.getResolver) {
-        const resolver = await provider.getResolver(value)
-        const rawAvatar = resolver?.getText ? await resolver.getText('avatar') : null
-        setAvatarUrl(sanitizeAvatarUrl(rawAvatar))
-      }
-      return
-    }
-
-    if (value.startsWith('0x') && provider.lookupAddress) {
-      const name = await provider.lookupAddress(value)
-      if (!name) {
-        setError('Address not found.')
+      if (value.startsWith('0x') && provider.lookupAddress) {
+        const name = await provider.lookupAddress(value)
+        if (!name) {
+          setError('Address not found.')
+          return
+        }
+        setResolvedName(name)
         return
       }
-      setResolvedName(name)
-      return
-    }
 
-    setError('Unsupported input.')
+      setError('Unsupported input.')
+    } catch (resolveError) {
+      setError(normalizeResolverError(resolveError).message)
+    }
   }
 
   const copyAddress = async () => {

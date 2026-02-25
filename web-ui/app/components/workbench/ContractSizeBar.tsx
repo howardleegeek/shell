@@ -1,3 +1,10 @@
+import {
+  EVM_YELLOW_MAX,
+  classifyEvmContractSize,
+  formatKilobytes,
+  formatMegabytes,
+} from './contractSize.js'
+
 export type ContractSizeKind = 'evm' | 'svm'
 
 export type ContractSizeEntry = {
@@ -14,20 +21,16 @@ export type ContractLike = {
   }
 }
 
-const EVM_WARNING_BYTES = 20 * 1024
-const EVM_LIMIT_BYTES = 24_576
 const SVM_WARNING_BYTES = 5 * 1024 * 1024
 const SVM_LIMIT_BYTES = 10 * 1024 * 1024
 
 function getLimitBytes(kind: ContractSizeKind): number {
-  return kind === 'evm' ? EVM_LIMIT_BYTES : SVM_LIMIT_BYTES
+  return kind === 'evm' ? EVM_YELLOW_MAX : SVM_LIMIT_BYTES
 }
 
 export function colorForSize(sizeBytes: number, kind: ContractSizeKind): 'green' | 'yellow' | 'red' {
   if (kind === 'evm') {
-    if (sizeBytes > EVM_LIMIT_BYTES) return 'red'
-    if (sizeBytes >= EVM_WARNING_BYTES) return 'yellow'
-    return 'green'
+    return classifyEvmContractSize(sizeBytes)
   }
 
   if (sizeBytes > SVM_LIMIT_BYTES) return 'red'
@@ -40,10 +43,10 @@ export function formatSizeBarLabel(sizeBytes: number, kind: ContractSizeKind): s
   const percent = Math.round((sizeBytes / limit) * 100)
 
   if (kind === 'evm') {
-    return `${(sizeBytes / 1024).toFixed(1)}KB / 24KB (${percent}%)`
+    return `${formatKilobytes(sizeBytes)}KB / 24KB (${percent}%)`
   }
 
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)}MB / 10MB (${percent}%)`
+  return `${formatMegabytes(sizeBytes)}MB / 10MB (${percent}%)`
 }
 
 export function computeContractSizes(contract: ContractLike): ContractSizeEntry[] {
